@@ -1,0 +1,26 @@
+{
+  "total": 21,
+  "scenes": {
+    "1-1_0":  {"best_frame": "left", "cut_duration": 0.8, "best_moment": "液体倒入滤网",       "main_object": "玻璃调酒壶",       "action_type": "pouring"},
+    "1-2_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体倒入滤网",       "main_object": "调酒杯（含滤网）",  "action_type": "pouring"},
+    "2-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体倒入量杯瞬间",    "main_object": "调酒量杯与酒瓶",   "action_type": "pouring"},
+    "3-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "倒酒入量杯瞬间",     "main_object": "红棕色酒液",      "action_type": "pouring"},
+    "4-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "倒酒进行中",        "main_object": "酒瓶与酒杯",      "action_type": "pouring"},
+    "5-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "倒酒入量杯",        "main_object": "量杯",          "action_type": "pouring"},
+    "6-1_0":  {"best_frame": "left", "cut_duration": 0.8, "best_moment": "酒液接触量杯瞬间",    "main_object": "酒瓶",          "action_type": "pouring"},
+    "7-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体倾倒中",        "main_object": "酒瓶",          "action_type": "pouring"},
+    "8-1_0":  {"best_frame": "right","cut_duration": 0.75,"best_moment": "液体倒入烧杯瞬间",    "main_object": "牛奶/液体",      "action_type": "pouring"},
+    "9-1_0":  {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "搅拌动作最明显",     "main_object": "调酒杯",        "action_type": "mixing"},
+    "10-1_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体倾倒中",        "main_object": "液体",          "action_type": "pouring"},
+    "10-2_0": {"best_frame": "left", "cut_duration": 0.8, "best_moment": "液体接触滤纸",      "main_object": "滤纸与液体",     "action_type": "pouring"},
+    "11-1_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体混合关键瞬间",    "main_object": "玻璃调酒壶",     "action_type": "mixing"},
+    "11-1_1": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体滴落壶中",      "main_object": "咖啡壶（滤杯+壶）","action_type": "pouring"},
+    "11-1_2": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体流畅倾泻",      "main_object": "玻璃壶",        "action_type": "pouring"},
+    "11-2_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体滴落瞬间",      "main_object": "滤壶",          "action_type": "pouring"},
+    "12-1_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "液体倾倒瞬间",      "main_object": "玉兰花与酒杯",   "action_type": "pouring"},
+    "13-1_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "花瓣舒展最佳",      "main_object": "玉兰花马天尼",   "action_type": "decoration"},
+    "14-1_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "装饰花朵瞬间",      "main_object": "带花马天尼",     "action_type": "decoration"},
+    "14-2_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "装饰完成瞬间",      "main_object": "马天尼酒杯",     "action_type": "decoration"},
+    "14-3_0": {"best_frame": "mid",  "cut_duration": 0.8, "best_moment": "手压玉兰花装饰",    "main_object": "玉兰花马天尼",   "action_type": "decoration"}
+  }
+}

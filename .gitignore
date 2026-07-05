@@ -1,0 +1,105 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === 虚拟环境 ===
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+
+# === 操作系统 ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === 视频/音频/图片生成物（大文件） ===
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+*.mp3
+*.wav
+*.aac
+*.flac
+
+# 但允许小型示例素材
+!samples/*.mp4
+!samples/*.mp3
+!samples/**/*.mp4
+!samples/**/*.mp3
+!docs/**/*.mp4
+!docs/**/*.mp3
+
+# === 帧抓取 / 中间产物 ===
+_scene_probe/
+_scene_triplet/
+_scene_extra/
+_storyboard_frames/
+_subject_probe/
+_thumbs*/
+_v5_clips/
+_v6_clips/
+_v7_clips/
+_clips_*/
+clips/
+clips_*/
+trf/
+*.trf
+
+# === 任务工作目录（阶段 1 后启用） ===
+jobs/
+outputs/
+
+# === 临时文件 ===
+*.tmp
+*.temp
+*.log
+.DS_Store
+_md2pdf_tmp.html
+_md2pdf_input.html
+md2pdf_*.pdf
+md2pdf_*.html
+
+# === 数据文件 ===
+*.pkl
+*.pickle
+_dao2_records.pkl
+
+# === 大目录（外部依赖，不进仓库） ===
+BBDown/
+CosyVoice/
+GPT-SoVITS/
+ffmpeg.exe
+ffprobe.exe
+model/
+models/
+weights/
+
+# === API keys / 配置 ===
+.env
+.env.local
+*.key
+secrets.json
+config.local.yaml
+config.local.json

@@ -1,0 +1,29 @@
+{
+  "narrative": "小红书 30s 氛围版：暖调 + 慢节奏，让画面有时间呼吸",
+  "target_duration_sec": 30,
+  "expected_duration_sec": 29.4,
+  "scene_count": 21,
+  "selected": [
+    {"order": 1,  "id": "1-1_0",  "cut_duration": 1.4, "subtitle": "玉兰花马天尼"},
+    {"order": 2,  "id": "1-2_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 3,  "id": "2-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 4,  "id": "3-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 5,  "id": "4-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 6,  "id": "5-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 7,  "id": "6-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 8,  "id": "7-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 9,  "id": "8-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 10, "id": "9-1_0",  "cut_duration": 1.4, "subtitle": null},
+    {"order": 11, "id": "10-1_0", "cut_duration": 1.4, "subtitle": null},
+    {"order": 12, "id": "10-2_0", "cut_duration": 1.4, "subtitle": null},
+    {"order": 13, "id": "11-1_0", "cut_duration": 1.4, "subtitle": null},
+    {"order": 14, "id": "11-1_1", "cut_duration": 1.4, "subtitle": null},
+    {"order": 15, "id": "11-1_2", "cut_duration": 1.4, "subtitle": null},
+    {"order": 16, "id": "11-2_0", "cut_duration": 1.4, "subtitle": null},
+    {"order": 17, "id": "12-1_0", "cut_duration": 1.6, "subtitle": "玉兰花"},
+    {"order": 18, "id": "13-1_0", "cut_duration": 2.0, "subtitle": "玉兰花马天尼"},
+    {"order": 19, "id": "14-1_0", "cut_duration": 1.6, "subtitle": null},
+    {"order": 20, "id": "14-2_0", "cut_duration": 1.6, "subtitle": "马天尼杯"},
+    {"order": 21, "id": "14-3_0", "cut_duration": 2.0, "subtitle": "玉兰花装饰"}
+  ]
+}

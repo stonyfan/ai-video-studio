@@ -1,0 +1,34 @@
+# AI 视频智能剪辑 - Python 依赖
+# 安装：pip install -r requirements.txt
+
+# 视频处理
+scenedetect[opencv]==0.7
+opencv-python==4.13.0.92
+
+# 音频分析
+librosa==0.10.2
+soundfile==0.13.0
+
+# 图像处理
+Pillow==12.2.0
+numpy==2.4.6
+
+# AI 模型适配（统一接口，按需启用 provider）
+openai>=1.0.0           # Qwen-VL / Doubao / DeepSeek 通用 OpenAI 兼容 SDK
+httpx>=0.27.0           # 直接 HTTP 调用备用
+tenacity>=8.0.0         # 重试机制
+
+# 数据校验
+pydantic>=2.0.0         # JSON schema 校验
+
+# 文档/工具
+markdown>=3.5           # md → HTML
+pypdf>=4.0              # PDF 验证
+
+# 进度/日志
+tqdm>=4.65.0
+rich>=13.0.0
+
+# 测试（开发时）
+pytest>=7.0.0
+pytest-cov>=4.0.0

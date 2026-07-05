@@ -1,0 +1,371 @@
+{
+  "01_0": {
+    "id": "01_0",
+    "src": "clips_dao2_v4/01.mp4",
+    "seg": "01",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 1.2,
+    "dur": 1.2
+  },
+  "01_1": {
+    "id": "01_1",
+    "src": "clips_dao2_v4/01.mp4",
+    "seg": "01",
+    "sc_idx": 1,
+    "start": 1.2,
+    "end": 3.36,
+    "dur": 2.16
+  },
+  "02_0": {
+    "id": "02_0",
+    "src": "clips_dao2_v4/02.mp4",
+    "seg": "02",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 2.04,
+    "dur": 2.04
+  },
+  "02_1": {
+    "id": "02_1",
+    "src": "clips_dao2_v4/02.mp4",
+    "seg": "02",
+    "sc_idx": 1,
+    "start": 2.04,
+    "end": 4.32,
+    "dur": 2.28
+  },
+  "03_0": {
+    "id": "03_0",
+    "src": "clips_dao2_v4/03.mp4",
+    "seg": "03",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 2.28,
+    "dur": 2.28
+  },
+  "03_1": {
+    "id": "03_1",
+    "src": "clips_dao2_v4/03.mp4",
+    "seg": "03",
+    "sc_idx": 1,
+    "start": 2.28,
+    "end": 4.32,
+    "dur": 2.04
+  },
+  "04_0": {
+    "id": "04_0",
+    "src": "clips_dao2_v4/04.mp4",
+    "seg": "04",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "05_0": {
+    "id": "05_0",
+    "src": "clips_dao2_v4/05.mp4",
+    "seg": "05",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 5.76,
+    "dur": 5.76
+  },
+  "06_0": {
+    "id": "06_0",
+    "src": "clips_dao2_v4/06.mp4",
+    "seg": "06",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.72,
+    "dur": 6.72
+  },
+  "07_0": {
+    "id": "07_0",
+    "src": "clips_dao2_v4/07.mp4",
+    "seg": "07",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.24,
+    "dur": 6.24
+  },
+  "08_0": {
+    "id": "08_0",
+    "src": "clips_dao2_v4/08.mp4",
+    "seg": "08",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.8,
+    "dur": 4.8
+  },
+  "09_0": {
+    "id": "09_0",
+    "src": "clips_dao2_v4/09.mp4",
+    "seg": "09",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.72,
+    "dur": 6.72
+  },
+  "10_0": {
+    "id": "10_0",
+    "src": "clips_dao2_v4/10.mp4",
+    "seg": "10",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 15.84,
+    "dur": 15.84
+  },
+  "11_0": {
+    "id": "11_0",
+    "src": "clips_dao2_v4/11.mp4",
+    "seg": "11",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 9.6,
+    "dur": 9.6
+  },
+  "12_0": {
+    "id": "12_0",
+    "src": "clips_dao2_v4/12.mp4",
+    "seg": "12",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.68,
+    "dur": 7.68
+  },
+  "13_0": {
+    "id": "13_0",
+    "src": "clips_dao2_v4/13.mp4",
+    "seg": "13",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "14_0": {
+    "id": "14_0",
+    "src": "clips_dao2_v4/14.mp4",
+    "seg": "14",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.72,
+    "dur": 6.72
+  },
+  "15_0": {
+    "id": "15_0",
+    "src": "clips_dao2_v4/15.mp4",
+    "seg": "15",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.24,
+    "dur": 6.24
+  },
+  "16_0": {
+    "id": "16_0",
+    "src": "clips_dao2_v4/16.mp4",
+    "seg": "16",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.8,
+    "dur": 4.8
+  },
+  "17_0": {
+    "id": "17_0",
+    "src": "clips_dao2_v4/17.mp4",
+    "seg": "17",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.24,
+    "dur": 6.24
+  },
+  "18_0": {
+    "id": "18_0",
+    "src": "clips_dao2_v4/18.mp4",
+    "seg": "18",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.2,
+    "dur": 7.2
+  },
+  "19_0": {
+    "id": "19_0",
+    "src": "clips_dao2_v4/19.mp4",
+    "seg": "19",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.24,
+    "dur": 6.24
+  },
+  "20_0": {
+    "id": "20_0",
+    "src": "clips_dao2_v4/20.mp4",
+    "seg": "20",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.72,
+    "dur": 6.72
+  },
+  "21_0": {
+    "id": "21_0",
+    "src": "clips_dao2_v4/21.mp4",
+    "seg": "21",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 6.24,
+    "dur": 6.24
+  },
+  "22_0": {
+    "id": "22_0",
+    "src": "clips_dao2_v4/22.mp4",
+    "seg": "22",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.68,
+    "dur": 7.68
+  },
+  "23_0": {
+    "id": "23_0",
+    "src": "clips_dao2_v4/23.mp4",
+    "seg": "23",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "24_0": {
+    "id": "24_0",
+    "src": "clips_dao2_v4/24.mp4",
+    "seg": "24",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 5.28,
+    "dur": 5.28
+  },
+  "25_0": {
+    "id": "25_0",
+    "src": "clips_dao2_v4/25.mp4",
+    "seg": "25",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 2.28,
+    "dur": 2.28
+  },
+  "25_1": {
+    "id": "25_1",
+    "src": "clips_dao2_v4/25.mp4",
+    "seg": "25",
+    "sc_idx": 1,
+    "start": 2.28,
+    "end": 3.84,
+    "dur": 1.56
+  },
+  "26_0": {
+    "id": "26_0",
+    "src": "clips_dao2_v4/26.mp4",
+    "seg": "26",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "27_0": {
+    "id": "27_0",
+    "src": "clips_dao2_v4/27.mp4",
+    "seg": "27",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 8.16,
+    "dur": 8.16
+  },
+  "28_0": {
+    "id": "28_0",
+    "src": "clips_dao2_v4/28.mp4",
+    "seg": "28",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "29_0": {
+    "id": "29_0",
+    "src": "clips_dao2_v4/29.mp4",
+    "seg": "29",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "30_0": {
+    "id": "30_0",
+    "src": "clips_dao2_v4/30.mp4",
+    "seg": "30",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.2,
+    "dur": 7.2
+  },
+  "31_0": {
+    "id": "31_0",
+    "src": "clips_dao2_v4/31.mp4",
+    "seg": "31",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 5.76,
+    "dur": 5.76
+  },
+  "32_0": {
+    "id": "32_0",
+    "src": "clips_dao2_v4/32.mp4",
+    "seg": "32",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.2,
+    "dur": 7.2
+  },
+  "33_0": {
+    "id": "33_0",
+    "src": "clips_dao2_v4/33.mp4",
+    "seg": "33",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 3.36,
+    "dur": 3.36
+  },
+  "34_0": {
+    "id": "34_0",
+    "src": "clips_dao2_v4/34.mp4",
+    "seg": "34",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 5.28,
+    "dur": 5.28
+  },
+  "35_0": {
+    "id": "35_0",
+    "src": "clips_dao2_v4/35.mp4",
+    "seg": "35",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 4.32,
+    "dur": 4.32
+  },
+  "36_0": {
+    "id": "36_0",
+    "src": "clips_dao2_v4/36.mp4",
+    "seg": "36",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 3.84,
+    "dur": 3.84
+  },
+  "37_0": {
+    "id": "37_0",
+    "src": "clips_dao2_v4/37.mp4",
+    "seg": "37",
+    "sc_idx": 0,
+    "start": 0.0,
+    "end": 7.68,
+    "dur": 7.68
+  }
+}
