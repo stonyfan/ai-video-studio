@@ -72,7 +72,7 @@ scene_detect:
 # 预处理（横屏转竖屏的策略）
 preprocess:
   resize_strategy: blur_background   # crop | letterbox | blur_background
-  blur_sigma: 25.0
+  blur_sigma: 80.0                   # 强化模糊（25→80），背景接近纯色，前景突出
 
 # 渲染
 render:
