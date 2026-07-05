@@ -67,8 +67,13 @@ def process_job(config_in: JobConfig,
         p_cfg = config.get_platform_config(yaml_cfg, config_in.platform)
         resolution = tuple(p_cfg.get("resolution", [720, 1280]))
         fps = p_cfg.get("fps", 25)
+        # 横屏转竖屏策略
+        pp_cfg = yaml_cfg.get("preprocess", {})
+        strategy = pp_cfg.get("resize_strategy", "blur_background")
+        blur_sigma = pp_cfg.get("blur_sigma", 25.0)
         clips = preprocess.normalize(clips_src, job_dir, config_in,
                                      resolution=resolution, fps=fps,
+                                     strategy=strategy, blur_sigma=blur_sigma,
                                      ffmpeg_path=config_in.ffmpeg_path, logger=logger)
         if not clips:
             raise RuntimeError("重编码后无可用视频")
