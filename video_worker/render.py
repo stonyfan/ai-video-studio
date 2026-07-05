@@ -37,20 +37,23 @@ COLOR_GRADES = {
 }
 
 
+def _abs(p: Path) -> str:
+    """转绝对路径并正斜杠（避免 Windows cwd 子路径问题）"""
+    return str(p.resolve()).replace("\\", "/")
+
+
 def cut_clip(src: Path, us: float, ue: float, out: Path,
              ffmpeg_path: Path, grade_filter: str,
              crf: int = 20, logger: Optional[logging.Logger] = None) -> bool:
     """切单段，应用色调滤镜"""
-    src_arg = str(src).replace("\\", "/")
-    out_arg = str(out).replace("\\", "/")
     cmd = [
-        str(ffmpeg_path), "-y",
+        _abs(ffmpeg_path), "-y",
         "-ss", f"{us:.3f}", "-to", f"{ue:.3f}",
-        "-i", src_arg,
+        "-i", _abs(src),
         "-vf", grade_filter,
         "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
         "-pix_fmt", "yuv420p", "-an", "-r", "25",
-        out_arg,
+        _abs(out),
     ]
     r = subprocess.run(cmd, capture_output=True, timeout=120)
     ok = r.returncode == 0 and out.exists() and out.stat().st_size > 5000
@@ -62,14 +65,20 @@ def cut_clip(src: Path, us: float, ue: float, out: Path,
 
 def concat(clips: list[Path], concat_file: Path, output: Path,
            ffmpeg_path: Path, logger: Optional[logging.Logger] = None) -> bool:
-    """concat demuxer"""
+    """concat demuxer：file 路径相对于 concat_file 所在目录"""
     clips = sorted(clips)
-    concat_file.write_text(
-        "\n".join(f"file '{c.parent.name}/{c.name}'" for c in clips) + "\n",
-        encoding="utf-8",
-    )
-    cmd = [str(ffmpeg_path), "-y", "-f", "concat", "-safe", "0",
-           "-i", str(concat_file), "-c", "copy", str(output)]
+    base = concat_file.parent
+    lines = []
+    for c in clips:
+        # 相对 concat_file 的路径（用正斜杠）
+        try:
+            rel = c.relative_to(base).as_posix()
+        except ValueError:
+            rel = str(c.resolve()).replace("\\", "/")
+        lines.append(f"file '{rel}'")
+    concat_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    cmd = [_abs(ffmpeg_path), "-y", "-f", "concat", "-safe", "0",
+           "-i", _abs(concat_file), "-c", "copy", _abs(output)]
     r = subprocess.run(cmd, capture_output=True, timeout=300)
     ok = r.returncode == 0
     if not ok and logger:
@@ -110,16 +119,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return ass_path
 
 
+def _escape_filter_path(p: Path) -> str:
+    """ffmpeg filter 里转义 : 和 ' （Windows 路径必备）"""
+    s = _abs(p)
+    return s.replace(":", "\\:").replace("'", "\\'")
+
+
 def add_bgm_and_subtitles(merged: Path, bgm: Path, output: Path,
                           ass_path: Optional[Path], ffmpeg_path: Path,
                           atempo: float = 1.0, bgm_volume: float = 0.85,
                           fade_in: float = 1.0, fade_out: float = 1.5,
                           total_dur: float = 0.0,
                           crf: int = 20, logger: Optional[logging.Logger] = None) -> bool:
-    cmd = [str(ffmpeg_path), "-y", "-i", str(merged),
-           "-stream_loop", "-1", "-i", str(bgm)]
+    cmd = [_abs(ffmpeg_path), "-y", "-i", _abs(merged),
+           "-stream_loop", "-1", "-i", _abs(bgm)]
     if ass_path:
-        cmd += ["-vf", f"subtitles='{ass_path.name}'"]
+        cmd += ["-vf", f"subtitles='{_escape_filter_path(ass_path)}'"]
     fade_out_start = max(0, total_dur - fade_out)
     audio_chain = f"atempo={atempo},volume={bgm_volume},afade=t=in:st=0:d={fade_in},afade=t=out:st={fade_out_start}:d={fade_out}"
     cmd += [
@@ -127,7 +142,7 @@ def add_bgm_and_subtitles(merged: Path, bgm: Path, output: Path,
         "-map", "0:v", "-map", "[a]",
         "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
         "-c:a", "aac", "-b:a", "192k",
-        "-shortest", str(output),
+        "-shortest", _abs(output),
     ]
     r = subprocess.run(cmd, capture_output=True, timeout=600)
     ok = r.returncode == 0
@@ -214,12 +229,17 @@ def render(board: Storyboard, analyzed: list[AnalyzedScene],
         )
     else:
         # 无 BGM，只烧字幕
-        cmd = [str(config.ffmpeg_path), "-y", "-i", str(merged)]
+        cmd = [_abs(config.ffmpeg_path), "-y", "-i", _abs(merged)]
         if ass_path.exists():
-            cmd += ["-vf", f"subtitles='{ass_path.name}'"]
+            cmd += ["-vf", f"subtitles='{_escape_filter_path(ass_path)}'"]
         cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
-                str(output)]
-        subprocess.run(cmd, capture_output=True, timeout=600, cwd=str(job_dir / "work"))
+                _abs(output)]
+        r = subprocess.run(cmd, capture_output=True, timeout=600)
+        if r.returncode != 0 and logger:
+            err = r.stderr.decode("utf-8", errors="replace")[-1000:]
+            logger.error(f"渲染失败（无 BGM 分支）: {err}")
+        elif logger:
+            logger.info(f"[render] 无 BGM 成片: {output}")
 
     if logger:
         logger.info(f"[render] 成片: {output}")
