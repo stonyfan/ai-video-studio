@@ -1,0 +1,78 @@
+# AI 视频智能剪辑 - 默认配置
+# 所有路径相对项目根目录 D:/ai-video-studio/
+
+provider:
+  name: zai               # 默认 AI 视觉 provider（阶段 2 增加 qwen-vl / doubao）
+  api_key_env: ZAI_API_KEY
+  timeout_sec: 60
+  max_retries: 3
+
+# 平台预设（参考 legacy/yulan/multi_build.py PLATFORM_CONFIG）
+platforms:
+  douyin:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: cool_strong     # 见 video_worker/render.py COLOR_GRADES
+    bgm_atempo: 1.5
+    cut_duration: 0.8
+    ass:
+      fontsize: 36
+      outline: 3.5
+      marginv: 100
+  xhs:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: warm
+    bgm_atempo: 0.85
+    cut_duration: 1.4
+    ass:
+      fontsize: 26
+      outline: 1.5
+      marginv: 90
+  videohao:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.4
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 110
+  general:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.2
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 100
+
+# 风格预设（覆盖平台 cut_duration）
+styles:
+  fast_cut:
+    cut_duration_range: [0.6, 1.0]
+  ambiance:
+    cut_duration_range: [1.2, 1.8]
+  narrative:
+    cut_duration_range: [1.4, 2.0]
+
+# 全局路径
+paths:
+  ffmpeg: tools/ffmpeg.exe
+  work_root: jobs
+
+# 场景切分
+scene_detect:
+  threshold: 27            # ContentDetector 阈值
+  min_len_sec: 0.4         # 最短场景
+
+# 渲染
+render:
+  crf: 20
+  preset: medium
+  bgm_volume: 0.85
+  fade_in_sec: 1.0
+  fade_out_sec: 1.5
