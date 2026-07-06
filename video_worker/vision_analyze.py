@@ -124,6 +124,9 @@ def analyze(scenes: list[Scene], triplets: dict[str, Path],
 def get_provider(provider_name: str, api_key: Optional[str] = None,
                  model: Optional[str] = None,
                  mcp_caller=None,
+                 mode: str = "direct",
+                 auth_token: Optional[str] = None,
+                 proxy_base_url: Optional[str] = None,
                  logger=None):
     """工厂方法：按 name 拿 provider 实例"""
     name = provider_name.lower()
@@ -133,17 +136,23 @@ def get_provider(provider_name: str, api_key: Optional[str] = None,
         return ZaiProvider(mcp_caller=mcp_caller, logger=logger)
     elif name == "qwen-vl":
         from .providers.qwen_vl import QwenVLProvider
-        kwargs = {"api_key": api_key}
+        kwargs = {"api_key": api_key, "mode": mode}
         if model:
             kwargs["model"] = model
+        if mode == "proxy":
+            kwargs["auth_token"] = auth_token
+            kwargs["proxy_base_url"] = proxy_base_url
         if logger:
             kwargs["logger"] = logger
         return QwenVLProvider(**kwargs)
     elif name == "doubao":
         from .providers.doubao import DoubaoProvider
-        kwargs = {"api_key": api_key}
+        kwargs = {"api_key": api_key, "mode": mode}
         if model:
             kwargs["model"] = model
+        if mode == "proxy":
+            kwargs["auth_token"] = auth_token
+            kwargs["proxy_base_url"] = proxy_base_url
         if logger:
             kwargs["logger"] = logger
         return DoubaoProvider(**kwargs)

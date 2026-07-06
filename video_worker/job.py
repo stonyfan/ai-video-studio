@@ -16,16 +16,27 @@ from . import frame_extract, vision_analyze, storyboard, render
 
 def process_job(config_in: JobConfig,
                 provider=None,
+                api_key: Optional[str] = None,
+                model: Optional[str] = None,
+                mode: str = "direct",
+                auth_token: Optional[str] = None,
+                proxy_base_url: Optional[str] = None,
                 logger: Optional[logging.Logger] = None,
                 skip_vision: bool = False,
-                 skip_render: bool = False) -> JobResult:
+                skip_render: bool = False,
+                skip_auth: bool = False) -> JobResult:
     """
     单一入口。
 
     provider: 实现 analyze_image(image_path, prompt) -> str 的对象
               None 时按 config.provider 取默认（生产用）/ Mock（测试用）
+    api_key: A 模式直连时用的 provider API key（覆盖环境变量）
+    model: 模型名（如 qwen-vl-plus）
+    mode: direct（A 模式直连）/ proxy（C 模式预留）
+    auth_token: proxy 模式用的 JWT
     skip_vision: True 时跳过 AI 分析（用默认值填充）
     skip_render: True 时只到 storyboard，不渲染
+    skip_auth: 跳过登录态检查（开发/测试用）
     """
     started = datetime.now().isoformat(timespec="seconds")
 
@@ -97,7 +108,7 @@ def process_job(config_in: JobConfig,
         progress.report(config_in.job_id, JobStatus.TRIPLETS_READY, work_root=config_in.work_root)
 
         # === 5. AI 视觉分析 ===
-        logger.info(f"[5/7] AI 视觉分析 (provider={config_in.provider.value}, skip={skip_vision})")
+        logger.info(f"[5/7] AI 视觉分析 (provider={config_in.provider.value}, skip={skip_vision}, mode={mode})")
         if skip_vision:
             # 用默认值填充
             from .validators import AnalyzedScene
@@ -110,8 +121,16 @@ def process_job(config_in: JobConfig,
             ]
         else:
             if provider is None:
-                provider = vision_analyze.get_provider(config_in.provider.value)
-            analyzed = vision_analyze.analyze(scenes, triplets, provider, job_dir, logger)
+                provider = vision_analyze.get_provider(
+                    config_in.provider.value,
+                    api_key=api_key,
+                    model=model,
+                    mode=mode,
+                    auth_token=auth_token,
+                    proxy_base_url=proxy_base_url,
+                    logger=logger,
+                )
+            analyzed = vision_analyze.analyze(scenes, triplets, provider, job_dir, logger=logger)
             vision_calls = len(analyzed)
         progress.report(config_in.job_id, JobStatus.ANALYZED, work_root=config_in.work_root)
 
