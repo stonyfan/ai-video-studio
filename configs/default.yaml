@@ -2,10 +2,25 @@
 # 所有路径相对项目根目录 D:/ai-video-studio/
 
 provider:
-  name: zai               # 默认 AI 视觉 provider（阶段 2 增加 qwen-vl / doubao）
-  api_key_env: ZAI_API_KEY
+  name: qwen-vl            # zai | qwen-vl | doubao（zai 仅 Claude Code 环境）
+  api_key_env: DASHSCOPE_API_KEY
+  model: qwen-vl-plus
   timeout_sec: 60
   max_retries: 3
+
+# 各 provider 的 API key 环境变量
+providers:
+  qwen-vl:
+    api_key_env: DASHSCOPE_API_KEY
+    model: qwen-vl-plus
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  doubao:
+    api_key_env: ARK_API_KEY
+    model: doubao-1.5-vision-pro
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+  zai:
+    # 通过 MCP 调用，无需 api_key
+    pass
 
 # 平台预设（参考 legacy/yulan/multi_build.py PLATFORM_CONFIG）
 platforms:
