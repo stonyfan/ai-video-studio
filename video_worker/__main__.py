@@ -1,12 +1,16 @@
 """
 CLI:
-  登录：python -m video_worker --login
-  配置 API key：python -m video_worker --set-key qwen-vl
-  跑任务：python -m video_worker -i <dir> --platform douyin
+  登录：python -m video_worker login
+  配置 API key：python -m video_worker set-key qwen-vl
+  跑任务：python -m video_worker run -i <dir> --platform douyin
+
+  Electron 集成：python -m video_worker run --skip-auth
+    API key/model 通过环境变量 WORKER_API_KEY/WORKER_MODEL 注入（不读 config.json）
 """
 from __future__ import annotations
 import argparse
 import getpass
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -49,14 +53,19 @@ def cmd_set_key(args):
 
 
 def cmd_run(args):
-    store = ConfigStore()
-    auth = AuthClient(store=store)
-    try:
-        auth.ensure_session_valid()
-    except Exception as e:
-        print(f"❌ {e}", file=sys.stderr)
-        print(f"   先运行: python -m video_worker --login", file=sys.stderr)
-        sys.exit(1)
+    # Electron 集成模式：--skip-auth 跳过登录态检查
+    # API key/model 优先从环境变量读（Electron 注入），否则回退 config_store
+    if not args.skip_auth:
+        store = ConfigStore()
+        auth = AuthClient(store=store)
+        try:
+            auth.ensure_session_valid()
+        except Exception as e:
+            print(f"❌ {e}", file=sys.stderr)
+            print(f"   先运行: python -m video_worker login", file=sys.stderr)
+            sys.exit(1)
+    else:
+        store = None
 
     job_id = args.job_id or f"job_{uuid.uuid4().hex[:8]}"
     cfg = JobConfig(
@@ -73,9 +82,18 @@ def cmd_run(args):
         config_path=args.config,
     )
 
-    # 从 config_store 注入 API key（A 模式）
-    api_key = store.get_provider_key(args.provider)
-    model = store.get_provider_model(args.provider)
+    # API key/model 注入：env 优先（Electron 模式），其次 config_store（CLI 模式）
+    env_key = os.environ.get("WORKER_API_KEY")
+    env_model = os.environ.get("WORKER_MODEL")
+    if env_key:
+        api_key = env_key
+        model = env_model
+    elif store is not None:
+        api_key = store.get_provider_key(args.provider)
+        model = store.get_provider_model(args.provider)
+    else:
+        api_key = None
+        model = None
 
     result = process_job(
         cfg,
@@ -83,6 +101,7 @@ def cmd_run(args):
         model=model,
         skip_vision=args.skip_vision,
         skip_render=args.skip_render,
+        skip_auth=args.skip_auth,
     )
     print(f"\n=== 结果 ===")
     print(f"job_id: {result.job_id}")
@@ -119,6 +138,8 @@ def main():
     p_run.add_argument("--config", type=Path, default=Path("configs/default.yaml"))
     p_run.add_argument("--skip-vision", action="store_true")
     p_run.add_argument("--skip-render", action="store_true")
+    p_run.add_argument("--skip-auth", action="store_true",
+                       help="跳过登录态检查（Electron 集成用）")
 
     # 兼容旧调用：无子命令时默认 run
     parser.add_argument("--input", "-i", type=Path, default=None, help="（兼容旧调用）")

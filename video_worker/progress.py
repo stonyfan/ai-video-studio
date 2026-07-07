@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 import json
+import os
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -43,14 +44,16 @@ def report(job_id: str, status: JobStatus | str,
         history.append({"status": status.value, "ts": ts})
         _state[job_id] = prev
 
-    # 写文件
+    # 写文件（原子写：tmp + os.replace，避免 fs.watch 读到半截 JSON）
     root = work_root or _work_root
     if root:
         progress_path = get_job_dir(job_id, root) / "logs" / "progress.json"
         progress_path.parent.mkdir(parents=True, exist_ok=True)
-        progress_path.write_text(
+        tmp_path = progress_path.with_suffix(".json.tmp")
+        tmp_path.write_text(
             json.dumps(prev, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+        os.replace(tmp_path, progress_path)
 
 
 def get_status(job_id: str) -> Optional[dict]:

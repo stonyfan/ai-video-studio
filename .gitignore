@@ -8,9 +8,14 @@ build/
 dist/
 *.egg-info/
 .eggs/
+*.spec
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# === 测试 / 临时任务产物 ===
+test-jobs/
+jobs/
 
 # === 虚拟环境 ===
 venv/
