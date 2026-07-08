@@ -16,8 +16,12 @@
     "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
     "chokidar": "^4.0.3",
-    "electron-updater": "^6.3.9"
+    "dayjs": "^1.11.21",
+    "electron-updater": "^6.3.9",
+    "react-router-dom": "^7.18.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

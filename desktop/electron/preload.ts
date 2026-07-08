@@ -40,6 +40,7 @@ const api = {
     startJob: (opts: unknown) => ipcRenderer.invoke('worker:startJob', opts),
     cancel: (jobId: string) => ipcRenderer.invoke('worker:cancel', { jobId }),
     listJobs: () => ipcRenderer.invoke('worker:listJobs'),
+    getJobDetail: (jobId: string) => ipcRenderer.invoke('worker:getJobDetail', { jobId }),
     openFolder: (jobId: string) => ipcRenderer.invoke('worker:openFolder', { jobId }),
     onProgress: (cb: (p: { jobId: string; progress: unknown }) => void) => {
       const handler = (_e: unknown, p: { jobId: string; progress: unknown }) => cb(p)

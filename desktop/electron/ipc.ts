@@ -63,6 +63,10 @@ export function registerIpc(win: BrowserWindow): void {
     return workerRunner.listJobs()
   })
 
+  ipcMain.handle('worker:getJobDetail', (_evt, args: { jobId: string }) => {
+    return workerRunner.getJobDetail(args.jobId)
+  })
+
   ipcMain.handle('worker:openFolder', (_evt, args: { jobId: string }) => {
     return workerRunner.openJobFolder(args.jobId)
   })

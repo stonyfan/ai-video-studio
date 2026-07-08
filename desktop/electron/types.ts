@@ -76,6 +76,15 @@ export interface JobHandle {
   pid: number
 }
 
+export interface JobSummary {
+  job_id: string
+  status: string                    // 从 result.json 或 progress.json 取
+  created_at: string                // 任务目录 mtime
+  final_video: string | null
+  error_message: string | null
+  duration_sec: number | null
+}
+
 export type IPCChannel =
   | 'auth:login'
   | 'auth:logout'

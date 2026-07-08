@@ -21,7 +21,7 @@ import chokidar, { type FSWatcher } from 'chokidar'
 import { workerExePath, jobsRoot } from './paths'
 import { configStore } from './config'
 import type { BrowserWindow } from 'electron'
-import type { JobOptions, JobProgress, JobResult, JobHandle } from './types'
+import type { JobOptions, JobProgress, JobResult, JobHandle, JobSummary } from './types'
 
 class WorkerRunner {
   private processes = new Map<string, ChildProcess>()
@@ -149,14 +149,47 @@ class WorkerRunner {
     }
   }
 
-  listJobs(): string[] {
+  listJobs(): JobSummary[] {
     const root = jobsRoot()
     if (!fs.existsSync(root)) return []
-    return fs.readdirSync(root)
-      .filter(name => {
-        const stat = fs.statSync(path.join(root, name))
-        return stat.isDirectory()
-      })
+    const dirs = fs.readdirSync(root)
+      .filter(name => fs.statSync(path.join(root, name)).isDirectory())
+    return dirs.map(name => this.summarizeJob(name))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }
+
+  getJobDetail(jobId: string): { result: JobResult | null; progress: JobProgress | null } {
+    return {
+      result: this.tryReadJson<JobResult>(this.resultPath(jobId)),
+      progress: this.tryReadJson<JobProgress>(this.progressPath(jobId))
+    }
+  }
+
+  private summarizeJob(jobId: string): JobSummary {
+    const dir = this.jobDir(jobId)
+    const stat = fs.statSync(dir)
+    const result = this.tryReadJson<JobResult>(this.resultPath(jobId))
+    const progress = this.tryReadJson<JobProgress>(this.progressPath(jobId))
+
+    const status = result?.status || progress?.status || 'unknown'
+    const createdAt = stat.mtime.toISOString().slice(0, 19).replace('T', ' ')
+    return {
+      job_id: jobId,
+      status,
+      created_at: createdAt,
+      final_video: result?.final_video || null,
+      error_message: result?.error?.message || null,
+      duration_sec: result?.cost?.duration_sec || null
+    }
+  }
+
+  private tryReadJson<T>(p: string): T | null {
+    if (!fs.existsSync(p)) return null
+    try {
+      return JSON.parse(fs.readFileSync(p, 'utf-8')) as T
+    } catch {
+      return null
+    }
   }
 
   openJobFolder(jobId: string): boolean {
