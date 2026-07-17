@@ -43,6 +43,11 @@ export function defaultYamlPath(): string {
   return path.join(configsDir(), 'default.yaml')
 }
 
+/** 随客户端分发的默认 prompts.yaml（fallback：用户未拉到 prompt 集时用） */
+export function bundledPromptsPath(): string {
+  return path.join(configsDir(), 'prompts.yaml')
+}
+
 /** 用户数据目录（%APPDATA%/ai-video-studio/）*/
 export function userDataDir(): string {
   // app.getPath('userData') = %APPDATA%/<appName>

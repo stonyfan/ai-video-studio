@@ -8,12 +8,17 @@ import { app, ipcMain, dialog, BrowserWindow } from 'electron'
 import { authClient, getBackendUrl, getAllConfig } from './auth'
 import { configStore } from './config'
 import { workerRunner } from './worker'
+import { updater } from './updater'
+import { submitErrorReport } from './errorReport'
+import { promptSetClient } from './promptSet'
+import { curateRunner } from './curate'
 import type { JobOptions, Provider } from './types'
 
 export function registerIpc(win: BrowserWindow): void {
   // 让 worker/auth 持有 window 引用（用于 send 事件）
   authClient.setWindow(win)
   workerRunner.setWindow(win)
+  updater.setWindow(win)
 
   // === auth ===
   ipcMain.handle('auth:login', async (_evt, args: { username: string; password: string }) => {
@@ -45,10 +50,25 @@ export function registerIpc(win: BrowserWindow): void {
       return { ok: true }
     })
 
+  ipcMain.handle('config:setModelMode',
+    (_evt, args: { mode: 'A' | 'C' }) => {
+      configStore.setModelMode(args.mode)
+      return { ok: true }
+    })
+
   // === worker ===
   ipcMain.handle('worker:startJob', async (_evt, opts: JobOptions) => {
     try {
       return { ok: true as const, handle: await workerRunner.startJob(opts) }
+    } catch (e) {
+      const err = e as Error
+      return { ok: false as const, error: err.message }
+    }
+  })
+
+  ipcMain.handle('worker:resumeJob', async (_evt, args: { jobId: string }) => {
+    try {
+      return { ok: true as const, handle: await workerRunner.resumeJob(args.jobId) }
     } catch (e) {
       const err = e as Error
       return { ok: false as const, error: err.message }
@@ -83,6 +103,88 @@ export function registerIpc(win: BrowserWindow): void {
   // === app ===
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:getBackendUrl', () => getBackendUrl())
+
+  // === updater ===
+  ipcMain.handle('updater:check', async () => {
+    const info = await updater.check()
+    return info ?? null
+  })
+  ipcMain.handle('updater:download', async () => {
+    await updater.download()
+    return { ok: true }
+  })
+  ipcMain.handle('updater:install', () => {
+    updater.install()
+    return { ok: true }
+  })
+  ipcMain.handle('updater:getState', () => {
+    return updater.getState()
+  })
+  ipcMain.handle('updater:remindLater', () => {
+    updater.remindLater()
+    return { ok: true }
+  })
+
+  // === error report ===
+  ipcMain.handle('error-report:submit', async (_evt, args: { message: string; jobId?: string }) => {
+    return submitErrorReport({ message: args.message, jobId: args.jobId })
+  })
+
+  // === prompt set ===
+  ipcMain.handle('prompt-set:sync', async () => {
+    return promptSetClient.sync()
+  })
+
+  ipcMain.handle('prompt-set:getState', () => {
+    const cfg = configStore.load()
+    return cfg.prompt_set_cache || null
+  })
+
+  ipcMain.handle('prompt-set:listOptions', async () => {
+    return await promptSetClient.listOptions()
+  })
+
+  ipcMain.handle('prompt-set:select', async (_evt, promptSetId: number) => {
+    await promptSetClient.select(promptSetId)
+    return { ok: true }
+  })
+
+  // === curate (手动剪辑) — subprocess 模式 ===
+  curateRunner.setWindow(win)
+
+  ipcMain.handle('curate:getData', async (_evt, args: { jobId: string; inputDir?: string }) => {
+    return curateRunner.getData(args.jobId, args.inputDir)
+  })
+
+  ipcMain.handle('curate:buildPreviews', async (_evt, args: { jobId: string }) => {
+    return curateRunner.buildPreviews(args.jobId)
+  })
+
+  ipcMain.handle('curate:submit', async (
+    _evt,
+    args: { jobId: string; payload: unknown; inputDir?: string },
+  ) => {
+    return curateRunner.submit(
+      args.jobId,
+      args.payload as import('./curate').CurateSubmitPayload,
+      args.inputDir,
+    )
+  })
+
+  ipcMain.handle('curate:regenerate', async (
+    _evt,
+    args: { jobId: string; payload: unknown; inputDir?: string },
+  ) => {
+    return curateRunner.regenerate(
+      args.jobId,
+      args.payload as import('./curate').RegeneratePayload,
+      args.inputDir,
+    )
+  })
+
+  ipcMain.handle('curate:cancel', async (_evt, args: { jobId: string }) => {
+    return curateRunner.cancel(args.jobId)
+  })
 }
 
 export function unregisterIpc(): void {

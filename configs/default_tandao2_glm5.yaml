@@ -1,0 +1,120 @@
+# AI 视频智能剪辑 - 默认配置
+# 所有路径相对项目根目录 D:/ai-video-studio/
+
+provider:
+  name: GLM            # zai | qwen-vl | doubao（zai 仅 Claude Code 环境）
+  api_key_env: DASHSCOPE_API_KEY
+  model: qwen-vl-plus
+  timeout_sec: 60
+  max_retries: 3
+
+# 各 provider 的 API key 环境变量
+providers:
+  qwen-vl:
+    api_key_env: DASHSCOPE_API_KEY
+    model: qwen-vl-plus
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  doubao:
+    api_key_env: ARK_API_KEY
+    model: doubao-1.5-vision-pro
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+  zai:
+    # 通过 MCP 调用，无需 api_key
+    pass
+
+# 平台预设（参考 legacy/yulan/multi_build.py PLATFORM_CONFIG）
+platforms:
+  douyin:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: cool_strong     # 见 video_worker/render.py COLOR_GRADES
+    bgm_atempo: 1.5
+    cut_duration: 0.8
+    ass:
+      fontsize: 36
+      outline: 3.5
+      marginv: 100
+  xhs:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: warm
+    bgm_atempo: 0.85
+    cut_duration: 1.4
+    ass:
+      fontsize: 26
+      outline: 1.5
+      marginv: 90
+  videohao:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.4
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 110
+  general:
+    resolution: [1920, 1080]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.2
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 100
+
+# 风格预设（覆盖平台 cut_duration）
+styles:
+  fast_cut:
+    cut_duration_range: [0.6, 1.0]
+  ambiance:
+    cut_duration_range: [1.2, 1.8]
+  narrative:
+    cut_duration_range: [1.4, 2.0]
+
+# 全局路径
+paths:
+  ffmpeg: tools/ffmpeg.exe
+  work_root: jobs
+
+# 场景切分
+scene_detect:
+  threshold: 27            # ContentDetector 阈值
+  min_len_sec: 0.4         # 最短场景
+  max_scene_len_sec: 12    # 兜底强切阈值（早期 8s 切太碎，12s 减少航拍过度切分）
+
+# 预处理（横屏转竖屏的策略）
+preprocess:
+  resize_strategy: blur_background   # crop | letterbox | blur_background
+  blur_sigma: 80.0                   # 强化模糊（25→80），背景接近纯色，前景突出
+
+# 渲染
+render:
+  crf: 18
+  preset: fast
+  bgm_volume: 0.85
+  fade_in_sec: 1.0
+  fade_out_sec: 1.5
+  xfade_dur: 0.0             # 跨 src 转场时长（秒）；0=硬切，0.3=平滑过渡（同 src 内仍硬切）
+
+# 候选池分流（Phase 14）
+candidate_pool:
+  keep_score_min: 7.0          # compute_score >= 此值 且 bad_reason 空 → keep
+  maybe_score_min: 5.0         # 5-7 → maybe
+  discard_visual_max: 3        # bad_reason 非空且 visual <= 此值 → discard
+  discard_highlight_max: 4     # bad_reason 非空且 highlight <= 此值 → discard
+
+# EDL 规划（Phase 14，默认关闭，job.use_edl=True + 此处 enabled=true 双开关）
+edl:
+  enabled: true
+  model: glm-4.6v              # 复用 GLM client；纯文本调用不传图
+  max_candidates: 40           # 候选数上限（控 token，超过按 score 截断）
+  target_duration_tolerance: 0.2   # 总时长容差 ±20%
+  fallback_to_storyboard: true
+  primary_model: glm-5.2          # EDL 主模型覆盖（不影响视觉分析用的 model）；null 时用 provider.model
+  fallback_models:             # 主模型全部重试失败后按序切换（EDL 是纯文本任务，glm-4-plus 更适合）
+    - glm-4-plus
+  quality_check:               # EDL 质量校验配置（阈值在代码里硬编码，此处仅开关）
+    check_story_arc: true      # 校验前 2 段含 opening/hook、末 2 段含 ending

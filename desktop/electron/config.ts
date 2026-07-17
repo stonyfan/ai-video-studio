@@ -19,6 +19,7 @@ const DEFAULT_CONFIG: AppConfig = {
   session_token: null,
   refresh_token: null,
   user: null,
+  model_mode: 'A',
   provider_keys: {}
 }
 
@@ -106,6 +107,10 @@ class ConfigStore {
     }
     this.save(next)
     return next
+  }
+
+  setModelMode(mode: 'A' | 'C'): AppConfig {
+    return this.update({ model_mode: mode })
   }
 }
 

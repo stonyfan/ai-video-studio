@@ -1,0 +1,108 @@
+# tandao2 豆包测试 override：EDL 开 + 主模型走 Doubao-Seed-2.1-pro 接入点
+# 这个文件由 tandao2_doubao_full.py 临时生成，此处保留最近一次内容供排查
+provider:
+  name: GLM
+  api_key_env: DASHSCOPE_API_KEY
+  model: qwen-vl-plus
+  timeout_sec: 60
+  max_retries: 3
+
+providers:
+  qwen-vl:
+    api_key_env: DASHSCOPE_API_KEY
+    model: qwen-vl-plus
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  doubao:
+    api_key_env: ARK_API_KEY
+    model: doubao-1.5-vision-pro
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+  zai:
+    pass
+
+platforms:
+  douyin:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: cool_strong
+    bgm_atempo: 1.5
+    cut_duration: 0.8
+    ass:
+      fontsize: 36
+      outline: 3.5
+      marginv: 100
+  xhs:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: warm
+    bgm_atempo: 0.85
+    cut_duration: 1.4
+    ass:
+      fontsize: 26
+      outline: 1.5
+      marginv: 90
+  videohao:
+    resolution: [720, 1280]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.4
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 110
+  general:
+    resolution: [1920, 1080]
+    fps: 25
+    color_grade: natural
+    bgm_atempo: 1.0
+    cut_duration: 1.2
+    ass:
+      fontsize: 30
+      outline: 2.5
+      marginv: 100
+
+styles:
+  fast_cut:
+    cut_duration_range: [0.6, 1.0]
+  ambiance:
+    cut_duration_range: [1.2, 1.8]
+  narrative:
+    cut_duration_range: [1.4, 2.0]
+
+paths:
+  ffmpeg: tools/ffmpeg.exe
+  work_root: jobs
+
+scene_detect:
+  threshold: 27
+  min_len_sec: 0.4
+  max_scene_len_sec: 12
+
+preprocess:
+  resize_strategy: blur_background
+  blur_sigma: 80.0
+
+render:
+  crf: 18
+  preset: fast
+  bgm_volume: 0.85
+  fade_in_sec: 1.0
+  fade_out_sec: 1.5
+  xfade_dur: 0.0
+
+candidate_pool:
+  keep_score_min: 7.0
+  maybe_score_min: 5.0
+  discard_visual_max: 3
+  discard_highlight_max: 4
+
+edl:
+  enabled: true
+  model: glm-4.6v
+  max_candidates: 40
+  target_duration_tolerance: 0.2
+  fallback_to_storyboard: true
+  primary_model: ep-20260712162006-kcfdm
+  fallback_models: []
+  quality_check:
+    check_story_arc: true

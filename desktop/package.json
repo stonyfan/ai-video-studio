@@ -1,12 +1,12 @@
 {
   "name": "ai-video-studio-desktop",
-  "version": "0.4.0",
+  "version": "0.9.5",
   "description": "AI Video Studio - Windows 桌面客户端",
   "main": "out/main/main.js",
   "author": "AI Video Studio",
   "license": "MIT",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "chcp 65001 >nul && electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",

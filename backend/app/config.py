@@ -1,6 +1,6 @@
 """配置加载（环境变量）"""
 from __future__ import annotations
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -23,9 +23,21 @@ class Settings(BaseSettings):
     PORT: int = 8000
     ENV: str = "development"  # development | production
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Vision model proxy（Phase 7）
+    VISION_RATE_LIMIT_PER_MIN: int = 20   # 每用户每分钟最大请求数
+    VISION_UPSTREAM_TIMEOUT_SEC: int = 60  # 调上游 provider 的超时
+    VISION_PROXY_ENABLED: bool = True     # 总开关；false 时返回 503
+
+    # 错误报告（Phase 8）
+    ERROR_REPORTS_DIR: str = "/data/error_reports"  # 存 zip 的目录
+    ERROR_REPORT_MAX_BYTES: int = 20 * 1024 * 1024  # 单文件上限 20MB
+    ERROR_REPORT_RETENTION_DAYS: int = 30           # 自动清理超期报告
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",        # 忽略 docker-compose 透传过来的 DB_PASSWORD 等
+    )
 
 
 settings = Settings()

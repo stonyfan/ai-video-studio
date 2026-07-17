@@ -1,0 +1,49 @@
+appId: com.ai-video-studio.desktop
+productName: AI Video Studio
+copyright: Copyright (c) 2026 AI Video Studio
+
+# 入口：electron-vite build 输出到 out/
+directories:
+  output: release
+  buildResources: build
+
+# electron-vite 的 build 产物
+files:
+  - out/**/*
+  - package.json
+  - node_modules/**/*
+  - "!node_modules/**/{CHANGELOG.md,README.md,readme.md,*.d.ts,*.map,*.ts}"
+  - "!node_modules/**/{test,tests,__tests__,docs,doc,examples,example}/**"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,ds_store}"
+  - "!**/.*"
+
+# 把 worker + configs 打进 resources/
+# paths.ts 约定：<resources>/video-worker/video-worker.exe 和 <resources>/configs/
+extraResources:
+  - from: ../dist/video-worker
+    to: video-worker
+    filter: ["**/*"]
+  - from: ../configs
+    to: configs
+    filter: ["*.yaml", "*.yml"]
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # icon: build/icon.ico  # 暂用默认，发布前补
+  # 暂不做代码签名（MVP 阶段，OV 证书 ~¥1500/年）
+  signtoolOptions: null
+
+nsis:
+  oneClick: false                       # 允许用户选目录
+  perMachine: false                     # 装到 %LOCALAPPDATA%（不需要管理员）
+  allowElevation: true                  # 单独提示 UAC（用户确认后安装）
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: AI Video Studio
+  deleteAppDataOnUninstall: false       # 保留 config.json / jobs（避免误卸载丢用户数据）
+
+# 压缩：normal 比 maximum 快很多，包大小差 <5%
+compression: normal

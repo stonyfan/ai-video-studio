@@ -6,8 +6,8 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Table, Tag, Button, Space, Empty, Tooltip, message, Typography } from 'antd'
-import { ReloadOutlined, FolderOpenOutlined, PlusOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { Card, Table, Tag, Button, Space, Empty, Tooltip, App, Typography } from 'antd'
+import { ReloadOutlined, FolderOpenOutlined, PlusOutlined, PlayCircleOutlined, RedoOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
 import { workerApi } from '../api/client'
@@ -39,6 +39,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function Dashboard() {
   const nav = useNavigate()
+  const { message } = App.useApp()
   const [jobs, setJobs] = useState<JobSummary[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -59,6 +60,18 @@ export default function Dashboard() {
   const openFolder = async (jobId: string) => {
     const ok = await workerApi.openFolder(jobId)
     if (!ok) message.warning('任务目录不存在')
+  }
+
+  const resume = async (jobId: string) => {
+    const result = await workerApi.resumeJob(jobId) as
+      { ok: true; handle: { jobId: string; pid: number } } |
+      { ok: false; error: string }
+    if (!result.ok) {
+      message.error(`续跑失败: ${result.error}`)
+      return
+    }
+    message.success(`已开始续跑: ${result.handle.jobId}`)
+    nav(`/jobs/${result.handle.jobId}`)
   }
 
   const columns: ColumnsType<JobSummary> = [
@@ -98,6 +111,14 @@ export default function Dashboard() {
             <Button size="small" onClick={() => nav(`/jobs/${r.job_id}`)}>
               查看详情
             </Button>
+          )}
+          {r.status !== 'completed' && (
+            <Tooltip title="用同样的 job_id 续跑，已完成的步骤会跳过">
+              <Button size="small" type="primary" ghost icon={<RedoOutlined />}
+                      onClick={() => resume(r.job_id)}>
+                续跑
+              </Button>
+            </Tooltip>
           )}
           <Tooltip title="打开任务目录">
             <Button size="small" icon={<FolderOpenOutlined />}

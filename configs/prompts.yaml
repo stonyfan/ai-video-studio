@@ -4,44 +4,89 @@
 
 templates:
 
-  # 通用三联图高光检测（核心 prompt）
+  # 通用多帧高光检测（核心 prompt）
+  # 输入：N 帧序列（5-12 张，按时间顺序传入），不是三联图
   triplet_detect:
     default: |
       {vertical_prompt}
-      同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+      下面是同一视频片段按时间顺序排列的 N 帧（第 1 帧最早，第 N 帧最晚）。请按时间顺序理解动作发展，找出最佳瞬间。
 
       只返回 JSON，无其他文字：
-      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_object": "<主要物体>", "action_type": "<preparation|pouring|mixing|serving|decoration|landscape|walking|culture>"}
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration|landscape|walking|culture>", "needs_stabilization": <true|false>, "visual_quality": <1-10整数>, "motion_score": <1-10整数>, "highlight_score": <1-10整数>, "story_role": "<opening|process|climax|ending|broll>", "bad_reason": ""}
 
-      判断：动作高潮（液体接触/刀切/挤压/人物走过/入殿/远眺）> 静态准备。
-      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      判断要点：
+      - 把 N 帧看作连续动作：best_frame 表示最佳瞬间出现在序列的哪个位置（left=前段，mid=中段，right=后段）。
+      - 动作高潮（液体接触/刀切/挤压/人物走过/入殿/远眺）> 静态准备。
+      - cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      - main_objects 列出画面中 1-3 个主要物体（物体名简短，如"壁画"/"飞天"/"灯具"）。
+      - needs_stabilization 静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+      - visual_quality：画质（清晰度/曝光/构图）。9-10极佳，5-6中等，1-2严重失焦/过曝。
+      - motion_score：动态感。9-10强动作（喷射/碰撞），5-6中等，1-2完全静止。
+      - highlight_score：高光程度。9-10决定性瞬间/稀缺画面，5-6中性，1-2平淡。
+      - story_role：opening=开场广角，process=常规过程，climax=最值得播的高潮，ending=收尾，broll=空镜辅助镜头。
+      - bad_reason：质量问题简短描述（如"失焦"/"过曝"/"严重抖动"），无问题留空字符串。
+      - 【转场无效镜头】action_type=walking 或 main_objects 含"地面/鞋套/推车/支架/门"等"拍摄转场/装备调整"画面：highlight_score 给 2-3，story_role=broll，bad_reason 标注"转场无效"或"装备调整"。
+      - 【分数梯度】本批 N 段评分必须有梯度，避免全部塌缩到 5-6 分：约 15% 给 7-9（决定性瞬间/稀缺画面），约 30% 给 ≤3（平淡/转场无效/废片），其余 4-6 分。整批不允许全部挤在 5-6 分区间。
 
     travel: |
-      旅游 vlog 视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+      旅游 vlog 视频。下面是同一视频片段按时间顺序排列的 N 帧（第 1 帧最早，第 N 帧最晚）。请按时间顺序理解动作发展，找出最佳瞬间。
 
       只返回 JSON，无其他文字：
-      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_object": "<主要物体>", "action_type": "<preparation|landscape|walking|culture|serving|decoration>"}
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|landscape|walking|culture|serving|decoration>", "needs_stabilization": <true|false>, "visual_quality": <1-10整数>, "motion_score": <1-10整数>, "highlight_score": <1-10整数>, "story_role": "<opening|process|climax|ending|broll>", "bad_reason": ""}
 
-      判断：动作高潮（人物走过/入殿/远眺/食物上桌）> 静态准备。
-      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      判断要点：
+      - 把 N 帧看作连续动作：best_frame 表示最佳瞬间出现在序列的哪个位置（left=前段，mid=中段，right=后段）。
+      - 动作高潮（人物走过/入殿/远眺/食物上桌）> 静态准备。
+      - cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      - main_objects 列出画面中 1-3 个主要物体（物体名简短，如"栈桥"/"海鸥"/"灯塔"）。
+      - needs_stabilization 静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+      - visual_quality：画质（清晰度/曝光/构图）。9-10极佳，5-6中等，1-2严重失焦/过曝。
+      - motion_score：动态感。9-10强动作（人走过/海浪拍打），5-6中等，1-2完全静止。
+      - highlight_score：高光程度。9-10地标全景/决定性瞬间，5-6中性，1-2平淡。
+      - story_role：opening=地标开场广角，process=过程，climax=高光时刻（景点核心画面），ending=收尾，broll=空镜。
+      - bad_reason：质量问题简短描述（如"失焦"/"过曝"/"严重抖动"），无问题留空字符串。
+      - 【转场无效镜头】action_type=walking 或 main_objects 含"地面/鞋套/推车/支架/门"等"拍摄转场/装备调整"画面：highlight_score 给 2-3，story_role=broll，bad_reason 标注"转场无效"或"装备调整"。
+      - 【分数梯度】本批 N 段评分必须有梯度，避免全部塌缩到 5-6 分：约 15% 给 7-9（决定性瞬间/稀缺画面），约 30% 给 ≤3（平淡/转场无效/废片），其余 4-6 分。整批不允许全部挤在 5-6 分区间。
 
     food: |
-      餐饮/调酒 vlog 视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+      餐饮/调酒 vlog 视频。下面是同一视频片段按时间顺序排列的 N 帧（第 1 帧最早，第 N 帧最晚）。请按时间顺序理解动作发展，找出最佳瞬间。
 
       只返回 JSON，无其他文字：
-      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_object": "<主要物体>", "action_type": "<preparation|pouring|mixing|serving|decoration>"}
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration>", "needs_stabilization": <true|false>, "visual_quality": <1-10整数>, "motion_score": <1-10整数>, "highlight_score": <1-10整数>, "story_role": "<opening|process|climax|ending|broll>", "bad_reason": ""}
 
-      判断：动作高潮（食材下锅/翻炒/酱汁浇下/顾客品尝）> 静态准备。
-      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      判断要点：
+      - 把 N 帧看作连续动作：best_frame 表示最佳瞬间出现在序列的哪个位置（left=前段，mid=中段，right=后段）。
+      - 动作高潮（食材下锅/翻炒/酱汁浇下/顾客品尝）> 静态准备。
+      - cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      - main_objects 列出画面中 1-3 个主要物体（物体名简短，如"酒杯"/"调酒师"/"吧台"）。
+      - needs_stabilization 静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+      - visual_quality：画质（清晰度/曝光/构图）。9-10极佳，5-6中等，1-2严重失焦/过曝。
+      - motion_score：动态感。9-10强动作（倒酒/摇晃/搅拌），5-6中等，1-2完全静止。
+      - highlight_score：高光程度。9-10成品出锅/关键技巧瞬间，5-6中性，1-2平淡。
+      - story_role：opening=成品展示开场，process=制作过程，climax=出锅/品尝高潮，ending=收尾，broll=空镜。
+      - bad_reason：质量问题简短描述（如"失焦"/"过曝"/"严重抖动"），无问题留空字符串。
+      - 【转场无效镜头】action_type=walking 或 main_objects 含"地面/鞋套/推车/支架/门"等"拍摄转场/装备调整"画面：highlight_score 给 2-3，story_role=broll，bad_reason 标注"转场无效"或"装备调整"。
+      - 【分数梯度】本批 N 段评分必须有梯度，避免全部塌缩到 5-6 分：约 15% 给 7-9（决定性瞬间/稀缺画面），约 30% 给 ≤3（平淡/转场无效/废片），其余 4-6 分。整批不允许全部挤在 5-6 分区间。
 
     beauty: |
-      美妆教程视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+      美妆教程视频。下面是同一视频片段按时间顺序排列的 N 帧（第 1 帧最早，第 N 帧最晚）。请按时间顺序理解动作发展，找出最佳瞬间。
 
       只返回 JSON，无其他文字：
-      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_object": "<主要物体>", "action_type": "<preparation|pouring|mixing|serving|decoration>"}
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration>", "needs_stabilization": <true|false>, "visual_quality": <1-10整数>, "motion_score": <1-10整数>, "highlight_score": <1-10整数>, "story_role": "<opening|process|climax|ending|broll>", "bad_reason": ""}
 
-      判断：动作高潮（产品挤出/眼影显色/睫毛夹翘）> 静态准备。
-      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      判断要点：
+      - 把 N 帧看作连续动作：best_frame 表示最佳瞬间出现在序列的哪个位置（left=前段，mid=中段，right=后段）。
+      - 动作高潮（产品挤出/眼影显色/睫毛夹翘）> 静态准备。
+      - cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      - main_objects 列出画面中 1-3 个主要物体（物体名简短，如"口红"/"眼影盘"/"化妆刷"）。
+      - needs_stabilization 静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+      - visual_quality：画质（清晰度/曝光/构图）。9-10极佳，5-6中等，1-2严重失焦/过曝。
+      - motion_score：动态感。9-10强动作（涂抹/晕开/刷扫），5-6中等，1-2完全静止。
+      - highlight_score：高光程度。9-10效果对比/成品展示，5-6中性，1-2平淡。
+      - story_role：opening=妆前开场，process=步骤过程，climax=妆效对比高潮，ending=收尾，broll=空镜。
+      - bad_reason：质量问题简短描述（如"失焦"/"过曝"/"严重抖动"），无问题留空字符串。
+      - 【转场无效镜头】action_type=walking 或 main_objects 含"地面/鞋套/推车/支架/门"等"拍摄转场/装备调整"画面：highlight_score 给 2-3，story_role=broll，bad_reason 标注"转场无效"或"装备调整"。
+      - 【分数梯度】本批 N 段评分必须有梯度，避免全部塌缩到 5-6 分：约 15% 给 7-9（决定性瞬间/稀缺画面），约 30% 给 ≤3（平淡/转场无效/废片），其余 4-6 分。整批不允许全部挤在 5-6 分区间。
 
   # 单帧场景分析
   scene_analyze:
@@ -61,9 +106,87 @@ templates:
 
       主体指：食物/手/人/物品/有动作的物体。根据画面实际内容判断，不要给固定值。
 
+  # 视频候选高光判断（方案一：用 video_url 调用 GLM-4.6V）
+  # 入参：完整 mp4/mov 片段（≤30s 推荐），返回 keep/discard 判断 + 推荐剪点
+  candidate_eval:
+    default: |
+      你是一个专业视频剪辑师。给定一段视频片段，判断它是否值得保留在最终成片里。
+
+      只返回 JSON，无其他文字：
+      {"keep": <true|false>, "confidence": <0.0-1.0>, "highlight_score": <1-10整数>, "discard_score": <1-10整数>, "visual_quality": <1-10整数>, "motion_score": <1-10整数>, "summary": "<10-20字一句话总结>", "bad_reason": "", "recommended_start_offset": <秒，浮点>, "recommended_end_offset": <秒，浮点>, "story_role": "<opening|hook|process|climax|ending|broll|discard>", "tags": ["<标签1>", "<标签2>"], "reason": "<30字内说明保留/丢弃理由>"}
+
+      判断要点：
+      - keep=true：有明确主体 + 信息密度足够 + 画质可接受。
+      - keep=false：严重失焦/过曝/剧烈晃动/无主体/纯废片。bad_reason 必填。
+      - recommended_start/end_offset 是相对于本片段 0 秒的剪点（不是源视频时间码）。
+      - 偏差范围：start 距片段开头 ±2s 内，end 距片段结尾 ±2s 内。
+      - story_role: hook=强开场，opening=广角建立画面，process=常规过程，climax=最值得播的高潮，ending=收束，broll=空镜辅助，discard=废片。
+      - highlight_score：9-10 决定性瞬间/稀缺画面，5-6 中性，1-2 平淡无信息。
+      - discard_score：9-10 必丢（废片），5-6 可留可丢，1-2 必留。
+      - confidence：判断把握（高质量片段或明显废片接近 1.0，模糊的 0.5-0.7）。
+
+      示例（高光）：
+      {"keep": true, "confidence": 0.85, "highlight_score": 9, "discard_score": 2, "visual_quality": 8, "motion_score": 7, "summary": "人物走近展示产品细节", "bad_reason": "", "recommended_start_offset": 3.2, "recommended_end_offset": 12.7, "story_role": "hook", "tags": ["主体清晰", "动作明确"], "reason": "开头动作明显，信息密度高，适合做强开场"}
+
+      示例（废片）：
+      {"keep": false, "confidence": 0.92, "highlight_score": 2, "discard_score": 9, "visual_quality": 3, "motion_score": 1, "summary": "镜头长时间对着地面晃动", "bad_reason": "剧烈晃动+无主体", "recommended_start_offset": 0, "recommended_end_offset": 0, "story_role": "discard", "tags": ["无主体", "晃动"], "reason": "无叙事价值且画质差"}
+
+  # EDL 全局规划（Phase 14）
+  # 入参：候选池 JSON（keep+maybe）+ 用户 prompt + target_duration + style
+  # 输出：完整 EDL（剪辑顺序 + 每段剪点 + 故事角色 + 入选理由）
+  edl_planner:
+    default: |
+      你是一个专业视频剪辑师，擅长把零散素材编排成有故事感的短视频。
+
+      下面是用户的剪辑请求和已经过 AI 评分的候选片段池。请从中挑选合适的片段，规划成最终剪辑顺序（EDL）。
+
+      === 用户请求 ===
+      用户请求：{user_request}
+      目标时长：{target_duration_sec} 秒
+      风格：{style}
+
+      === 候选片段池（JSON，按 id 字段引用）===
+      {candidates_json}
+
+      === 规则 ===
+      1. 总时长（每段 use_end - use_start 之和）必须落在 [{duration_min}, {duration_max}] 秒区间内。
+
+      2. 【最重要】主体多样性：任意相邻 3 段的 main_objects 集合不得完全相同。
+         - BAD: sc_0001(海港) → sc_0002(海港) → sc_0003(海港) ← 三段完全同主体，禁止
+         - BAD: sc_0001(灯塔) → sc_0002(灯塔) → sc_0003(灯塔) ← 即使剪点不同也禁止
+         - GOOD: sc_0001(海港) → sc_0002(灯塔) → sc_0003(海港) ← 中间换主体，可以
+         - GOOD: sc_0001(海港夜) → sc_0002(街景) → sc_0003(海港昼) ← 不同场景，可以
+         - 如果候选池主体集中在 1-2 个（如全是海港），优先选 use_start/use_end 不同的角度，
+           或主动跳过若干候选（宁可总时长偏短也不要 3 连同主体）。
+
+      3. 段数建议：
+         - fast_cut（快剪）：每段约 0.6-1.0s，总段数 ≈ 目标时长 / 0.8
+         - narrative（叙事）：每段约 1.4-2.0s，总段数 ≈ 目标时长 / 1.5
+         - ambiance（氛围）：每段约 1.2-1.8s，总段数 ≈ 目标时长 / 1.5
+
+      4. 故事弧（story_arc）：
+         - 第 1 段应为 opening（建立画面/场景广角）或 hook（强冲击力的开场）
+         - 中段按 process 递进，将 climax（最值得播的高光）均匀分布在中后段
+         - 最后 1-2 段应为 ending（收束，回望/远景/夕阳等）
+
+      5. 每段 use_start / use_end 必须落在该 id 候选片段的 [start, end] 区间内。
+
+      6. 优先选 highlight_score 高的片段作为 climax。
+
+      7. 候选池已是"AI 评分通过的"，不要再次否决，只需挑选和排序。
+
+      8. 只能引用候选池里出现的 id，不要编造新 id。
+
+      === 输出格式 ===
+      只返回 JSON，无其他文字、无 markdown 代码块：
+      {{"narrative": "<一句话中文总结整个视频的故事>", "items": [{{"order": <从1开始的整数>, "id": "<候选片段id>", "use_start": <秒，浮点>, "use_end": <秒，浮点>, "story_role_assigned": "<opening|hook|process|climax|ending|broll>", "reason": "<20字内中文入选理由>"}}]}}
+
+      示例输出：
+      {{"narrative": "青岛夜景航拍：从五四广场灯光秀到奥体中心天际线", "items":[{{"order":1,"id":"sc_0001","use_start":1.5,"use_end":3.0,"story_role_assigned":"opening","reason":"灯光全景建立场景"}}, {{"order":2,"id":"sc_0003","use_start":2.0,"use_end":3.5,"story_role_assigned":"climax","reason":"灯光秀高潮瞬间"}}]}}
+
 # 垂类 prompt 注入（用 {vertical_prompt} 占位符替换）
 verticals:
   default: "视频剪辑素材。"
-  travel: "敦煌旅游 vlog 视频。"
+  travel: "旅游 vlog 视频。"
   food: "调酒/餐饮制作视频。"
   beauty: "美妆教程视频。"

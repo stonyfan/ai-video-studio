@@ -108,3 +108,20 @@ weights/
 secrets.json
 config.local.yaml
 config.local.json
+
+# === DB 备份 ===
+backend/backups/
+
+# === 临时密钥文件（切勿提交）===
+.tmp_key.env
+*.tmp_key.env
+
+# === admin-ui 构建产物 ===
+backend/admin-ui/node_modules/
+backend/admin-ui/dist/
+
+# === 含硬编码 API key 的本地调试脚本（切勿提交）===
+scripts/curate_video.py
+scripts/tandao2_doubao_full.py
+scripts/tandao2_doubao_hybrid_resume.py
+scripts/xinghua_doubao_hybrid_resume.py

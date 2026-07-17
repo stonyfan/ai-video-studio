@@ -8,6 +8,7 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=128)
     device_fp: str | None = Field(None, max_length=64)
     user_agent: str | None = Field(None, max_length=255)
+    session_type: str = Field("desktop", pattern=r"^(desktop|web)$")
 
 
 class TokenResponse(BaseModel):

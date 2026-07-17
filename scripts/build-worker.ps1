@@ -1,4 +1,4 @@
-# Build video-worker.exe (PyInstaller --onedir)
+﻿# Build video-worker.exe (PyInstaller --onedir)
 # Usage: pwsh scripts/build-worker.ps1
 # Output: dist/video-worker/video-worker.exe + dist/video-worker/_internal/
 
@@ -50,6 +50,7 @@ $Args = @(
     "--add-data", "tools\ffmpeg.exe;tools",
     "--hidden-import", "video_worker.providers.qwen_vl",
     "--hidden-import", "video_worker.providers.doubao",
+    "--hidden-import", "video_worker.providers.glm",
     "--hidden-import", "video_worker.providers.zai_provider",
     "--collect-data", "pydantic",
     # 排除 worker 实际不用的大块头

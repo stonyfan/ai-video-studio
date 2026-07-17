@@ -22,3 +22,7 @@ export const configApi = api.config
 export const workerApi = api.worker
 export const dialogApi = api.dialog
 export const appApi = api.app
+export const updaterApi = api.updater
+export const errorReportApi = api.errorReport
+export const promptSetApi = api.promptSet
+export const curateApi = api.curate

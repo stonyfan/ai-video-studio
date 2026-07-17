@@ -21,9 +21,32 @@ from .validators import JobConfig
 ResizeStrategy = Literal["crop", "letterbox", "blur_background"]
 
 
+def read_rotation(video_path: Path, ffmpeg_path: Path,
+                  logger: Optional[logging.Logger] = None) -> int:
+    """读 displaymatrix rotation，归一化到 0/90/180/270。仅供日志/调试，处理靠 ffmpeg 默认 autorotate。"""
+    ff = str(ffmpeg_path.resolve())
+    cmd = [ff, "-i", str(video_path), "-f", "null", "-"]
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return 0
+    err = r.stderr.decode("utf-8", errors="replace")
+    m = re.search(r"rotation of ([-\d.]+) degrees", err)
+    if not m:
+        return 0
+    try:
+        deg = float(m.group(1))
+    except ValueError:
+        return 0
+    norm = round(deg / 90) * 90 % 360
+    if norm != 0 and logger:
+        logger.info(f"[rot] {video_path.name}: {deg}° (ffmpeg 默认 autorotate 会自动 bake)")
+    return norm
+
+
 def detect_orientation(video_path: Path, ffmpeg_path: Path,
                        logger: Optional[logging.Logger] = None) -> str:
-    """抽中间帧判断横屏/竖屏（不信任 ffprobe rotation 元数据）"""
+    """抽中间帧判断横屏/竖屏。用 ffmpeg 默认 autorotate（旋转 metadata 会自动应用到帧上）。"""
     ff = str(ffmpeg_path.resolve())
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         tmp_path = Path(tmp.name)
@@ -57,44 +80,64 @@ def get_duration(video_path: Path, ffmpeg_path: Path) -> float:
     return 0.0
 
 
-def build_normalize_vf(target_resolution: tuple[int, int],
-                       orientation: str,
-                       strategy: ResizeStrategy = "blur_background") -> Optional[str]:
+def build_blur_background_vf(target_resolution: tuple[int, int],
+                              blur_sigma: float = 25.0) -> str:
     """
-    返回 -vf 滤镜字符串。
-    blur_background 策略返回 None（需要 -filter_complex，由 normalize_one 特殊处理）。
-    """
-    w, h = target_resolution
-    if orientation != "horizontal":
-        # 竖屏：直接 scale（无论 strategy）
-        return f"scale={w}:{h}:flags=lanczos"
-
-    # 横屏
-    if strategy == "crop":
-        return f"crop=ih*9/16:ih,scale={w}:{h}:flags=lanczos"
-    elif strategy == "letterbox":
-        return f"scale={w}:-1,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black"
-    elif strategy == "blur_background":
-        return None  # 走 filter_complex
-    else:
-        return f"scale={w}:{h}:flags=lanczos"
-
-
-def build_blur_background_complex(target_resolution: tuple[int, int],
-                                   blur_sigma: float = 25.0) -> str:
-    """
-    模糊背景填充的 -filter_complex 字符串
+    模糊背景填充的 -vf 字符串（用 split 复制输入流，避免 -filter_complex）。
     - 背景流：放大覆盖整个画面 + 高斯模糊
     - 前景流：等比缩放适应宽度
     - overlay 居中
+    用 -vf 路径让 ffmpeg 默认 autorotate 自动把旋转 metadata bake 进像素。
     """
     w, h = target_resolution
     return (
-        f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,"
+        f"split[a][b];"
+        f"[a]scale={w}:{h}:force_original_aspect_ratio=increase,"
         f"crop={w}:{h},gblur=sigma={blur_sigma}[bg];"
-        f"[0:v]scale={w}:{h}:force_original_aspect_ratio=decrease[fg];"
-        f"[bg][fg]overlay=(W-w)/2:(H-h)/2[v]"
+        f"[b]scale={w}:{h}:force_original_aspect_ratio=decrease[fg];"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2"
     )
+
+
+def build_normalize_vf(target_resolution: tuple[int, int],
+                       orientation: str,
+                       strategy: ResizeStrategy = "blur_background",
+                       blur_sigma: float = 25.0) -> str:
+    """返回 -vf 滤镜字符串（所有策略都走 -vf 路径，让 ffmpeg 默认 autorotate 处理旋转 metadata）。
+
+    方向匹配逻辑：
+    - 源方向 == 目标方向（或源方向 unknown）：等比缩放 + 居中裁切铺满（无变形）。
+    - 源方向 ≠ 目标方向：按 strategy 处理（blur_background / crop / letterbox）。
+    """
+    w, h = target_resolution
+    target_orient = "horizontal" if w > h else "vertical"
+
+    # 源方向 == 目标方向（或源方向未知）：等比缩放 + 居中裁切
+    if orientation == target_orient or orientation == "unknown":
+        return (
+            f"scale={w}:{h}:force_original_aspect_ratio=increase,"
+            f"crop={w}:{h}"
+        )
+
+    # 源方向 ≠ 目标方向：按 strategy 处理
+    if strategy == "blur_background":
+        return build_blur_background_vf(target_resolution, blur_sigma)
+    elif strategy == "crop":
+        # 中央裁切（丢源画面较长的一边）
+        if target_orient == "vertical":
+            ar = w / h
+            return f"crop=ih*{ar}:ih,scale={w}:{h}"
+        else:
+            ar = h / w
+            return f"crop=iw:iw*{ar},scale={w}:{h}"
+    elif strategy == "letterbox":
+        # 等比缩放后黑边填充
+        return (
+            f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+            f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black"
+        )
+    else:
+        return build_blur_background_vf(target_resolution, blur_sigma)
 
 
 def normalize_one(src: Path, out: Path, ffmpeg_path: Path,
@@ -104,28 +147,30 @@ def normalize_one(src: Path, out: Path, ffmpeg_path: Path,
                   strategy: ResizeStrategy = "blur_background",
                   blur_sigma: float = 25.0,
                   logger: Optional[logging.Logger] = None) -> bool:
-    """重编码到统一规格（去音轨）"""
+    """重编码到统一规格（去音轨）。
+    所有策略统一走 -vf 路径，让 ffmpeg 默认 autorotate 自动把旋转 metadata bake 进像素。
+    -filter_complex 路径不会自动应用 autorotate，且输出会保留 display matrix，
+    所以改用 -vf split 复制输入流，绕开 -filter_complex 的限制。
+    """
     ff = str(ffmpeg_path.resolve())
     if orientation is None:
         orientation = detect_orientation(src, ffmpeg_path, logger)
 
+    read_rotation(src, ffmpeg_path, logger)  # 仅日志，让用户知道该 clip 有旋转
+
     src_arg = str(src).replace("\\", "/")
     out_arg = str(out).replace("\\", "/")
 
-    base_cmd = [
+    vf = build_normalize_vf(resolution, orientation, strategy, blur_sigma)
+    cmd = [
         ff, "-y", "-i", src_arg,
-        "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+        "-vf", vf,
+        # fast/18：preprocess 后续还要被 cut_clip + add_bgm 重编码 2 次，
+        # 这里用较快 preset + 较高 CRF 节省时间，保留视觉无损质量
+        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
         "-pix_fmt", "yuv420p", "-an", "-r", str(fps),
+        out_arg,
     ]
-
-    vf = build_normalize_vf(resolution, orientation, strategy)
-    if vf:
-        # 简单 -vf 模式
-        cmd = base_cmd + ["-vf", vf, out_arg]
-    else:
-        # blur_background：用 -filter_complex
-        fc = build_blur_background_complex(resolution, blur_sigma)
-        cmd = base_cmd + ["-filter_complex", fc, "-map", "[v]", out_arg]
 
     r = subprocess.run(cmd, capture_output=True, timeout=900)
     ok = r.returncode == 0 and out.exists() and out.stat().st_size > 5000

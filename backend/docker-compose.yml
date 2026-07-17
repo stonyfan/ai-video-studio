@@ -10,9 +10,13 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - ENV=production
+      - BACKUP_DIR=/backups
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - ./backups:/backups:ro
+      - ../desktop/release:/releases:ro    # 客户端安装包下载（Phase 10+ 起所有 release 都从这里 serve）
     restart: unless-stopped
 
   mysql:
@@ -30,6 +34,26 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+
+  backup:
+    image: alpine:3.20
+    container_name: ai-video-backup
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=studio
+      - BACKUP_RETENTION_DAYS=7
+      # 每天凌晨 3:17 备份（避开整点，减少与其他定时任务的资源争抢）
+      - CRON_SCHEDULE=17 3 * * *
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    entrypoint: ["/bin/sh", "/backup.sh"]
     restart: unless-stopped
 
 volumes:

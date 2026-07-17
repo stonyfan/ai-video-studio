@@ -11,15 +11,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Card, Steps, Button, Space, Input, Typography, Tag, Radio, Slider,
-  Row, Col, Alert, Result, Spin, message
+  Row, Col, Alert, Result, Spin, App, Segmented, InputNumber
 } from 'antd'
 import {
   FolderOpenOutlined, VideoCameraOutlined, SoundOutlined,
-  ThunderboltOutlined, CheckCircleOutlined, RocketOutlined
+  ThunderboltOutlined, CheckCircleOutlined, RocketOutlined, CopyOutlined
 } from '@ant-design/icons'
 
 import { dialogApi, workerApi, configApi } from '../api/client'
-import type { Platform, Style, Provider, JobOptions } from '../../electron/types'
+import type { Platform, Style, Provider, JobOptions, OrchestrationMode } from '../../electron/types'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -31,23 +31,28 @@ const PLATFORMS: { id: Platform; name: string; desc: string; ratio: string }[] =
 ]
 
 const STYLES: { id: Style; name: string; desc: string }[] = [
-  { id: 'fast_cut', name: '快剪', desc: '快速切换，节奏感强' },
   { id: 'ambiance', name: '氛围', desc: '慢节奏，情绪化' },
   { id: 'narrative', name: '叙事', desc: '故事线，按拍摄顺序' }
 ]
 
 export default function NewJob() {
   const nav = useNavigate()
+  const { message } = App.useApp()
   const [step, setStep] = useState(0)
   const [input, setInput] = useState('')
   const [platform, setPlatform] = useState<Platform>('douyin')
-  const [style, setStyle] = useState<Style>('fast_cut')
+  const [style, setStyle] = useState<Style>('narrative')
   const [duration, setDuration] = useState(30)
+  const [variants, setVariants] = useState(1)
   const [bgm, setBgm] = useState('')
   const [provider, setProvider] = useState<Provider>('qwen-vl')
+  const [orchestrationMode, setOrchestrationMode] = useState<OrchestrationMode>('default')
+  const [skill, setSkill] = useState<string>('auto')
   const [apiReady, setApiReady] = useState<Record<Provider, boolean>>({
     'qwen-vl': false,
-    doubao: false
+    doubao: false,
+    'doubao-agent-plan': false,
+    glm: false
   })
   const [starting, setStarting] = useState(false)
 
@@ -64,9 +69,21 @@ export default function NewJob() {
 
   const checkProviderKey = async () => {
     const cfg = await configApi.getAll()
-    setApiReady({
+    const ready: Record<Provider, boolean> = {
       'qwen-vl': !!cfg.provider_keys['qwen-vl']?.key,
-      doubao: !!cfg.provider_keys['doubao']?.key
+      doubao: !!cfg.provider_keys['doubao']?.key,
+      'doubao-agent-plan': !!cfg.provider_keys['doubao-agent-plan']?.key,
+      glm: !!cfg.provider_keys['glm']?.key
+    }
+    setApiReady(ready)
+    // 当前 provider 未配置时，自动切到第一个已配置的（qwen-vl → doubao → doubao-agent-plan → glm）
+    setProvider(prev => {
+      if (ready[prev]) return prev
+      if (ready['qwen-vl']) return 'qwen-vl'
+      if (ready.doubao) return 'doubao'
+      if (ready['doubao-agent-plan']) return 'doubao-agent-plan'
+      if (ready.glm) return 'glm'
+      return prev
     })
   }
 
@@ -88,9 +105,12 @@ export default function NewJob() {
         platform,
         style,
         duration,
-        provider
+        provider,
+        orchestration_mode: orchestrationMode,
+        skill,
       }
       if (bgm) opts.bgm = bgm
+      if (variants > 1) opts.variants = variants
       const result = await workerApi.startJob(opts) as
         { ok: true; handle: { jobId: string; pid: number } } |
         { ok: false; error: string }
@@ -192,6 +212,56 @@ export default function NewJob() {
       content: (
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div>
+            <Title level={5}>编排模式</Title>
+            <Segmented
+              value={orchestrationMode}
+              onChange={v => setOrchestrationMode(v as OrchestrationMode)}
+              options={[
+                {
+                  label: '默认',
+                  value: 'default',
+                  icon: <ThunderboltOutlined />,
+                },
+                {
+                  label: '时间轴',
+                  value: 'timeline',
+                  icon: <ThunderboltOutlined />,
+                },
+                {
+                  label: 'LLM 故事阶段',
+                  value: 'llm',
+                  icon: <VideoCameraOutlined />,
+                },
+              ]}
+            />
+            <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+              {orchestrationMode === 'default'
+                ? 'LLM 挑选（每阶段代表+高分填充）+ per-src 去重 + creation_time 时间序。混合策略，推荐。'
+                : orchestrationMode === 'timeline'
+                ? '按视频真实拍摄时间（creation_time）排序，纯算法截断。快速、可预测。'
+                : '在时间序基础上调用 LLM 把片段聚成故事阶段，每阶段取代表 + 高分填充，按阶段序输出。LLM 调用 10-30s。'}
+            </Paragraph>
+          </div>
+          <div>
+            <Title level={5}>Skill（剪辑技能）</Title>
+            <Segmented
+              value={skill}
+              onChange={v => setSkill(v as string)}
+              options={[
+                { label: '自动匹配', value: 'auto' },
+                { label: '不使用', value: 'none' },
+                { label: '调酒', value: 'cocktail-mixology' },
+              ]}
+            />
+            <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+              {skill === 'auto'
+                ? '根据画面内容（main_objects/action_type 命中率）自动选择 skill。无匹配时退回纯算法。'
+                : skill === 'none'
+                ? '不注入任何 skill 指导，纯靠 LLM 自由发挥。'
+                : '调酒类素材专用：HOOK→SETUP→BUILD→GARNISH→SERVE 五段式骨架，T1 优先级（倒酒/摇晃/特写）。'}
+            </Paragraph>
+          </div>
+          <div>
             <Title level={5}>目标时长</Title>
             <Slider
               min={5} max={300} step={5}
@@ -203,6 +273,26 @@ export default function NewJob() {
               }}
             />
             <Text strong style={{ fontSize: 18 }}>{duration} 秒</Text>
+          </div>
+          <div>
+            <Title level={5}>
+              <Space>
+                生成数量
+                <CopyOutlined />
+              </Space>
+            </Title>
+            <Space>
+              <InputNumber
+                min={1} max={10} value={variants}
+                onChange={v => setVariants(typeof v === 'number' ? v : 1)}
+                size="large"
+              />
+              <Text type="secondary">个视频</Text>
+            </Space>
+            <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+              一次任务生成 N 个 30s 变体。视觉分析只跑一次，复用结果循环 LLM+渲染 N 次。
+              N&gt;1 时每个变体注入不同风格 hint（动作密集 / 氛围慢剪 / 故事推进 等），产出差异化成片。
+            </Paragraph>
           </div>
           <div>
             <Title level={5}>BGM（可选）</Title>
@@ -233,7 +323,24 @@ export default function NewJob() {
                 <Tag color="purple">{STYLES.find(s => s.id === style)?.name}</Tag>
               </Col></Row>
               <Row><Col span={6}><Text type="secondary">时长</Text></Col><Col>{duration} 秒</Col></Row>
+              <Row><Col span={6}><Text type="secondary">生成数量</Text></Col><Col>
+                <Tag color="magenta">{variants} 个</Tag>
+                {variants > 1 && <Text type="secondary" style={{ marginLeft: 8 }}>视觉复用，LLM+渲染循环 {variants} 次</Text>}
+              </Col></Row>
+              <Row><Col span={6}><Text type="secondary">编排</Text></Col><Col>
+                <Tag color="cyan">{
+                  orchestrationMode === 'default' ? '默认' :
+                  orchestrationMode === 'timeline' ? '时间轴' : 'LLM 故事阶段'
+                }</Tag>
+              </Col></Row>
               <Row><Col span={6}><Text type="secondary">BGM</Text></Col><Col>{bgm || '默认'}</Col></Row>
+              <Row><Col span={6}><Text type="secondary">Skill</Text></Col><Col>
+                <Tag color="orange">{
+                  skill === 'auto' ? '自动匹配' :
+                  skill === 'none' ? '不使用' :
+                  skill === 'cocktail-mixology' ? '调酒' : skill
+                }</Tag>
+              </Col></Row>
             </Space>
           </Card>
           <div>
@@ -250,8 +357,24 @@ export default function NewJob() {
                 </Radio>
                 <Radio value="doubao">
                   <Space>
-                    字节豆包
+                    字节豆包（按量）
                     {apiReady['doubao']
+                      ? <Tag color="green" icon={<CheckCircleOutlined />}>已配置</Tag>
+                      : <Tag color="red" onClick={() => nav('/settings')}>未配置（点这里去设置）</Tag>}
+                  </Space>
+                </Radio>
+                <Radio value="doubao-agent-plan">
+                  <Space>
+                    字节豆包 Agent Plan（订阅套餐）
+                    {apiReady['doubao-agent-plan']
+                      ? <Tag color="green" icon={<CheckCircleOutlined />}>已配置</Tag>
+                      : <Tag color="red" onClick={() => nav('/settings')}>未配置（点这里去设置）</Tag>}
+                  </Space>
+                </Radio>
+                <Radio value="glm">
+                  <Space>
+                    智谱 GLM-4V
+                    {apiReady['glm']
                       ? <Tag color="green" icon={<CheckCircleOutlined />}>已配置</Tag>
                       : <Tag color="red" onClick={() => nav('/settings')}>未配置（点这里去设置）</Tag>}
                   </Space>

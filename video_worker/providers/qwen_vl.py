@@ -12,6 +12,7 @@ OpenAI SDK 兼容模式：base_url=https://dashscope.aliyuncs.com/compatible-mod
 - proxy（C 模式预留）：用 JWT 当 key，调后端 model_proxy
 """
 from __future__ import annotations
+import logging
 import os
 from typing import Literal, Optional
 
@@ -42,7 +43,8 @@ class QwenVLProvider(VisionProvider):
                  base_url: Optional[str] = None,
                  mode: Literal["direct", "proxy"] = "direct",
                  auth_token: Optional[str] = None,
-                 proxy_base_url: Optional[str] = None):
+                 proxy_base_url: Optional[str] = None,
+                 logger: Optional[logging.Logger] = None):
         """
         mode=direct: A 模式，api_key + base_url 直接调阿里
         mode=proxy:  C 模式，用 auth_token（JWT）调后端 model_proxy
@@ -51,12 +53,13 @@ class QwenVLProvider(VisionProvider):
             if not auth_token:
                 raise ValueError("proxy 模式需要 auth_token（JWT）")
             api_key = auth_token
-            base_url = proxy_base_url or "http://localhost:8000/api/v1/vision"
+            base_url = proxy_base_url or "http://localhost:8000/api/v1/vision/qwen-vl"
         else:
             api_key = api_key or os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_VL_API_KEY")
             base_url = base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-        super().__init__(api_key=api_key, timeout_sec=timeout_sec, max_retries=max_retries)
+        super().__init__(api_key=api_key, timeout_sec=timeout_sec,
+                         max_retries=max_retries, logger=logger)
         self.model = model
         self.mode = mode
         self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout_sec)

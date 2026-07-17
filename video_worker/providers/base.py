@@ -152,6 +152,156 @@ class VisionProvider(ABC):
             self.stats.add(record)
             raise ProviderError(f"{self.name} 调用失败: {e}") from e
 
+    def analyze_video(self, video_url: str, prompt: str) -> str:
+        """
+        对外主入口（视频版）。
+        video_url: 公网可访问的 mp4/mov URL（本地路径不可用）
+        prompt: 文本 prompt
+        返回：API 响应文本（应该是 JSON 字符串）
+
+        子类默认未实现，需 override _raw_call_video。
+        """
+        @retry(
+            retry=retry_if_exception_type(ProviderError),
+            stop=stop_after_attempt(self.max_retries),
+            wait=wait_exponential(multiplier=1, min=2, max=15),
+            reraise=True,
+        )
+        def _do_call() -> tuple[str, dict]:
+            return self._raw_call_video(video_url, prompt)
+
+        import time
+        t0 = time.time()
+        try:
+            text, usage = _do_call()
+            record = CallRecord(
+                provider=self.name,
+                image_path=video_url,  # 复用字段记录 URL
+                prompt_chars=len(prompt),
+                success=True,
+                duration_sec=time.time() - t0,
+                input_tokens=usage.get("input_tokens", 0),
+                output_tokens=usage.get("output_tokens", 0),
+                estimated_cost_cny=usage.get("estimated_cost_cny", 0.0),
+            )
+            self.stats.add(record)
+            return text
+        except Exception as e:
+            record = CallRecord(
+                provider=self.name,
+                image_path=video_url,
+                prompt_chars=len(prompt),
+                success=False,
+                duration_sec=time.time() - t0,
+                error=str(e),
+            )
+            self.stats.add(record)
+            raise ProviderError(f"{self.name} 视频调用失败: {e}") from e
+
+    def analyze_images(self, image_paths: list[Path | str], prompt: str) -> str:
+        """
+        对外主入口（多图版）。按顺序传入 N 帧，模型按时间顺序理解。
+        用于替代单张三联图 — 单帧分辨率更高 + 时序天然有序。
+        """
+        paths = [Path(p) for p in image_paths]
+        for p in paths:
+            if not p.exists():
+                raise ProviderError(f"图片不存在: {p}")
+        b64s = [self._encode_image(p) for p in paths]
+
+        @retry(
+            retry=retry_if_exception_type(ProviderError),
+            stop=stop_after_attempt(self.max_retries),
+            wait=wait_exponential(multiplier=1, min=2, max=15),
+            reraise=True,
+        )
+        def _do_call() -> tuple[str, dict]:
+            return self._raw_call_images(b64s, prompt)
+
+        import time
+        t0 = time.time()
+        try:
+            text, usage = _do_call()
+            record = CallRecord(
+                provider=self.name,
+                image_path=str(paths[0]) + f" (+{len(paths)-1} more)",
+                prompt_chars=len(prompt),
+                success=True,
+                duration_sec=time.time() - t0,
+                input_tokens=usage.get("input_tokens", 0),
+                output_tokens=usage.get("output_tokens", 0),
+                estimated_cost_cny=usage.get("estimated_cost_cny", 0.0),
+            )
+            self.stats.add(record)
+            return text
+        except Exception as e:
+            record = CallRecord(
+                provider=self.name,
+                image_path=str(paths[0]) + f" (+{len(paths)-1} more)",
+                prompt_chars=len(prompt),
+                success=False,
+                duration_sec=time.time() - t0,
+                error=str(e),
+            )
+            self.stats.add(record)
+            raise ProviderError(f"{self.name} 多图调用失败: {e}") from e
+
+    def _raw_call_video(self, video_url: str, prompt: str) -> tuple[str, dict]:
+        """子类实现：调底层视频 API。默认未实现。"""
+        raise ProviderError(f"{self.name} 不支持 video_url 调用")
+
+    def _raw_call_images(self, image_b64s: list[str], prompt: str) -> tuple[str, dict]:
+        """子类实现：调底层多图 API。默认 fallback 到 _raw_call（用第一张）。"""
+        if not image_b64s:
+            raise ProviderError("image_b64s 为空")
+        return self._raw_call(image_b64s[0], prompt)
+
+    def _raw_chat(self, prompt: str, max_tokens: int = 4096) -> tuple[str, dict]:
+        """子类实现：纯文本 chat 调用（EDL 规划用）。默认未实现。"""
+        raise ProviderError(f"{self.name} 不支持 chat")
+
+    def chat(self, prompt: str, max_tokens: int = 4096) -> str:
+        """对外主入口（纯文本，无图片）。
+        用于 EDL 规划等"输入候选池 JSON + 输出 EDL JSON"的纯文本任务。
+        子类通过 override _raw_chat 实现。
+        """
+        @retry(
+            retry=retry_if_exception_type(ProviderError),
+            stop=stop_after_attempt(self.max_retries),
+            wait=wait_exponential(multiplier=1, min=2, max=15),
+            reraise=True,
+        )
+        def _do_call() -> tuple[str, dict]:
+            return self._raw_chat(prompt, max_tokens=max_tokens)
+
+        import time
+        t0 = time.time()
+        try:
+            text, usage = _do_call()
+            record = CallRecord(
+                provider=self.name,
+                image_path="(chat)",  # 标识这是无图调用
+                prompt_chars=len(prompt),
+                success=True,
+                duration_sec=time.time() - t0,
+                input_tokens=usage.get("input_tokens", 0),
+                output_tokens=usage.get("output_tokens", 0),
+                estimated_cost_cny=usage.get("estimated_cost_cny", 0.0),
+            )
+            self.stats.add(record)
+            return text
+        except Exception as e:
+            record = CallRecord(
+                provider=self.name,
+                image_path="(chat)",
+                prompt_chars=len(prompt),
+                success=False,
+                duration_sec=time.time() - t0,
+                error=str(e),
+            )
+            self.stats.add(record)
+            raise ProviderError(f"{self.name} chat 调用失败: {e}") from e
+
     @staticmethod
     def _encode_image(image_path: Path, max_size_kb: int = 8000) -> str:
         """

@@ -6,16 +6,18 @@
  * 已登录访问 /login → 跳 /
  */
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { ConfigProvider, Spin, Result } from 'antd'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { ConfigProvider, Spin, Result, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 
 import { useAuthStore } from './store/auth'
 import AppLayout from './components/AppLayout'
+import UpdateNotifier from './components/UpdateNotifier'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import NewJob from './pages/NewJob'
 import JobDetail from './pages/JobDetail'
+import Curate from './pages/Curate'
 import Settings from './pages/Settings'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -52,29 +54,33 @@ export default function App() {
     <ConfigProvider locale={zhCN} theme={{
       token: { colorPrimary: '#1677ff' }
     }}>
-      {error && !window.location.hash.includes('login') && (
-        <Result
-          status="warning"
-          title="初始化失败"
-          subTitle={error}
-        />
-      )}
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={
-            <RedirectIfAuthed><Login /></RedirectIfAuthed>
-          } />
-          <Route element={
-            <RequireAuth><AppLayout /></RequireAuth>
-          }>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/jobs/new" element={<NewJob />} />
-            <Route path="/jobs/:jobId" element={<JobDetail />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <AntdApp>
+        <UpdateNotifier />
+        {error && !window.location.hash.includes('login') && (
+          <Result
+            status="warning"
+            title="初始化失败"
+            subTitle={error}
+          />
+        )}
+        <HashRouter>
+          <Routes>
+            <Route path="/login" element={
+              <RedirectIfAuthed><Login /></RedirectIfAuthed>
+            } />
+            <Route element={
+              <RequireAuth><AppLayout /></RequireAuth>
+            }>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/jobs/new" element={<NewJob />} />
+              <Route path="/jobs/:jobId" element={<JobDetail />} />
+              <Route path="/jobs/:jobId/curate" element={<Curate />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </HashRouter>
+      </AntdApp>
     </ConfigProvider>
   )
 }

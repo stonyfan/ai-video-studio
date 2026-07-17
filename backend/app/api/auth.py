@@ -23,7 +23,7 @@ router = APIRouter()
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    """登录 + 单点顶替"""
+    """登录 + 单点顶替（按 session_type 隔离：同 user 同 type 互踢，跨 type 共存）"""
     user = db.query(User).filter(User.username == payload.username).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "用户名或密码错误")
@@ -32,9 +32,10 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     if not user.is_license_valid():
         raise HTTPException(status.HTTP_403_FORBIDDEN, "授权已过期")
 
-    # 单点顶替：把同 user 的活跃 session 全部撤销
+    # 单点顶替：只撤同 user + 同 session_type 的活跃 session
     db.query(SessionModel).filter(
         SessionModel.user_id == user.id,
+        SessionModel.session_type == payload.session_type,
         SessionModel.revoked_at.is_(None),
     ).update({"revoked_at": datetime.utcnow()})
     db.commit()
@@ -48,6 +49,7 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
         device_fp=payload.device_fp,
         ip=request.client.host if request.client else None,
         user_agent=payload.user_agent,
+        session_type=payload.session_type,
     )
     db.add(session)
     db.commit()
@@ -105,6 +107,21 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "授权已过期")
 
     access = create_access_token(user.id)
+
+    # 续期：把该用户最新 active session 的 token_hash 更新成新 access token 的 hash
+    # 否则后续 /auth/heartbeat 校验 token_hash 时找不到匹配行 → 401 "session 已失效"
+    new_hash = sha256_hash(access)
+    latest = (
+        db.query(SessionModel)
+        .filter(SessionModel.user_id == user_id, SessionModel.revoked_at.is_(None))
+        .order_by(SessionModel.created_at.desc())
+        .first()
+    )
+    if latest:
+        latest.token_hash = new_hash
+        latest.last_heartbeat_at = datetime.utcnow()
+        db.commit()
+
     return RefreshResponse(access_token=access, expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
 
 

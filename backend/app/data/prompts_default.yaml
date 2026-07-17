@@ -1,0 +1,79 @@
+# Prompt 模板库（默认集种子）
+# 此文件仅在 alembic 0008 migration 时被读取一次，写入 prompt_sets 表的默认集。
+# 后续以 DB 为准，本文件不再维护。admin 通过后台 UI 维护 prompt 集。
+# 用法：vision_analyze.py 加载本文件，按任务 + 垂类选 prompt
+# 占位符 {vertical} 由调用方注入
+
+templates:
+
+  # 通用三联图高光检测（核心 prompt）
+  triplet_detect:
+    default: |
+      {vertical_prompt}
+      同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+
+      只返回 JSON，无其他文字：
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration|landscape|walking|culture>", "needs_stabilization": <true|false>}
+
+      判断：动作高潮（液体接触/刀切/挤压/人物走过/入殿/远眺）> 静态准备。
+      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      main_objects 列出画面中 1-3 个主要物体（物体名简短，如"壁画"/"飞天"/"灯具"）。
+      needs_stabilization 判断该场景是否应为静止画面：静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+
+    travel: |
+      旅游 vlog 视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+
+      只返回 JSON，无其他文字：
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|landscape|walking|culture|serving|decoration>", "needs_stabilization": <true|false>}
+
+      判断：动作高潮（人物走过/入殿/远眺/食物上桌）> 静态准备。
+      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      main_objects 列出画面中 1-3 个主要物体（物体名简短，如"壁画"/"飞天"/"灯具"）。
+      needs_stabilization 判断该场景是否应为静止画面：静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+
+    food: |
+      餐饮/调酒 vlog 视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+
+      只返回 JSON，无其他文字：
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration>", "needs_stabilization": <true|false>}
+
+      判断：动作高潮（食材下锅/翻炒/酱汁浇下/顾客品尝）> 静态准备。
+      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      main_objects 列出画面中 1-3 个主要物体（物体名简短，如"壁画"/"飞天"/"灯具"）。
+      needs_stabilization 判断该场景是否应为静止画面：静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+
+    beauty: |
+      美妆教程视频。同一场景 3 个时刻横排（左25%/中50%/右75%）。判断哪帧是最佳瞬间。
+
+      只返回 JSON，无其他文字：
+      {"best_frame": "left|mid|right", "cut_duration": <0.5-1.5浮点数>, "best_moment": "<5-10字>", "main_objects": ["<主要物体1>", "<物体2>"], "action_type": "<preparation|pouring|mixing|serving|decoration>", "needs_stabilization": <true|false>}
+
+      判断：动作高潮（产品挤出/眼影显色/睫毛夹翘）> 静态准备。
+      cut_duration 紧凑动作0.5-1.0s，长过程1.0-1.5s。
+      main_objects 列出画面中 1-3 个主要物体（物体名简短，如"壁画"/"飞天"/"灯具"）。
+      needs_stabilization 判断该场景是否应为静止画面：静物/特写/静态全景=true，运镜/跟拍/平移/推拉=false。
+
+  # 单帧场景分析
+  scene_analyze:
+    default: |
+      视频帧。只返回 JSON，无其他文字：
+      {"action": "<2-4字动作>", "objects": ["<主要物体1>", "<物体2>"], "shot_type": "<特写|近景|中景|全景>", "visual_quality": <1-10整数>, "emotional_impact": <1-10整数>, "best_moment": "<5-10字瞬间描述>"}
+
+      判断：visual_quality 高=清晰/稳定/构图好；emotional_impact 高=吸引眼球/有冲击力。
+
+  # 主体位置识别（智能裁剪用）
+  subject_position:
+    default: |
+      这是横屏视频的中间帧。请按以下格式回复：
+
+      POSITION: <一句话描述主体在画面里横向的什么位置>
+      X: <一个 0.0 到 1.0 之间的浮点数，0.0=最左，0.5=居中，1.0=最右>
+
+      主体指：食物/手/人/物品/有动作的物体。根据画面实际内容判断，不要给固定值。
+
+# 垂类 prompt 注入（用 {vertical_prompt} 占位符替换）
+verticals:
+  default: "视频剪辑素材。"
+  travel: "敦煌旅游 vlog 视频。"
+  food: "调酒/餐饮制作视频。"
+  beauty: "美妆教程视频。"
